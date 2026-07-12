@@ -257,17 +257,19 @@ async function renderNotificationsDropdown() {
         return;
     }
 
-    list.innerHTML = notis.map(n => `
-        <div class="noti-dropdown-item ${n.read ? 'read' : 'unread'}" style="padding: 12px 18px; border-bottom: 1px solid var(--color-gray-100); display: flex; gap: 10px; cursor: pointer; background-color: ${n.read ? 'transparent' : 'rgba(113, 75, 103, 0.04)'}">
-            <div class="noti-icon" style="margin-top: 3px; color: ${n.type === 'warning' ? 'var(--color-warning)' : n.type === 'danger' ? 'var(--color-danger)' : 'var(--color-info)'}">
-                <i data-lucide="${n.type === 'warning' ? 'alert-triangle' : n.type === 'danger' ? 'x-circle' : 'info'}" style="width:16px; height:16px;"></i>
+    list.innerHTML = notis.slice(0, 8).map(n => {
+        const iconMap = { warning: "alert-triangle", danger: "x-circle", success: "check-circle" };
+        const icon = iconMap[n.type] || "info";
+        return `
+        <div class="noti-item ${n.read ? '' : 'unread'}">
+            <div class="noti-dot" style="background:${n.type === 'warning' ? 'var(--color-warning)' : n.type === 'danger' ? 'var(--color-danger)' : n.type === 'success' ? 'var(--color-success)' : 'var(--color-info)'}"></div>
+            <div class="noti-content">
+                <strong>${n.title}</strong>
+                <p>${n.message}</p>
             </div>
-            <div class="noti-content" style="flex:1;">
-                <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 2px;">${n.title}</h4>
-                <p style="font-size: 0.775rem; color: var(--color-gray-600); line-height: 1.3;">${n.message}</p>
-            </div>
+            <span class="noti-time">${n.createdAt ? new Date(n.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}</span>
         </div>
-    `).join("");
+    `}).join("");
     
     safeCreateIcons();
 }
