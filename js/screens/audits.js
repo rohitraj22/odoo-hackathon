@@ -1,372 +1,295 @@
-/* ==========================================================
-   AssetFlow - Verification & Audits Screen Component
-   ========================================================== */
+/* ======================================================
+   AssetFlow - Asset Audit Cycle Checklist (Wireframe: Screen 8)
+   ====================================================== */
 
 import { Store } from "../store.js";
-import { openModal, showToast } from "../app.js";
-
-let selectedAuditId = null; // Currently inspecting audit details
+import { showToast, openModal } from "../app.js";
 
 export function renderAudits(container, user) {
     const audits = Store.getAudits();
-
-    if (selectedAuditId) {
-        renderAuditDetail(container, selectedAuditId, user);
-        return;
-    }
+    const activeAudit = audits.find(a => a.status === "Active");
 
     container.innerHTML = `
         <div class="audits-wrapper">
-            <!-- Action bar -->
-            <div class="page-action-bar">
-                <h3>Verification Audit Cycles</h3>
-                ${(user.role === 'Admin') ? `
-                    <button class="btn btn-primary" id="launch-audit-btn">
-                        <i data-lucide="plus"></i> New Audit Cycle
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                <h3 style="font-size:1.25rem; font-weight:700;">Audit & Verification</h3>
+                ${(user.role === 'Admin' || user.role === 'Asset Manager') ? `
+                    <button class="btn" id="start-audit-btn" style="border:2px solid var(--color-gray-900); background-color:#e2f2e9; color:#065f46; font-weight:700;">
+                        + Start Audit Cycle
                     </button>
                 ` : ''}
             </div>
 
-            <!-- Audit Cycles List -->
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:20px;">
-                ${audits.length === 0 ? `
-                    <div class="action-card" style="grid-column: 1/-1; text-align:center; padding: 48px; border: 1px dashed var(--color-gray-300);">
-                        <p style="color:var(--color-gray-500);">No audit cycles launched yet.</p>
-                    </div>
-                ` : audits.map(au => {
-                    const progress = calculateProgress(au);
-                    return `
-                        <div class="action-card" style="display:flex; flex-direction:column; justify-content:space-between;">
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                    <span class="badge ${au.status === 'Open' ? 'badge-available' : 'badge-completed'}">${au.status}</span>
-                                    <span style="font-size:0.75rem; color:var(--color-gray-400);">ID: ${au.id}</span>
-                                </div>
-                                <h4 style="font-size:1.1rem; font-weight:700; margin-bottom:4px; color:var(--color-gray-900);">${au.name}</h4>
-                                <p style="font-size:0.8rem; color:var(--color-gray-500); margin-bottom:12px;">Scope: ${au.scopeType} (${au.scopeValue})</p>
-                                
-                                <div style="font-size:0.8rem; margin-bottom:14px; color:var(--color-gray-700);">
-                                    <div>Auditor: <strong>${au.auditorNames}</strong></div>
-                                    <div>Started: <strong>${au.startDate}</strong></div>
-                                    ${au.endDate ? `<div>Completed: <strong>${au.endDate}</strong></div>` : ''}
-                                </div>
+            ${activeAudit ? renderActiveAudit(activeAudit, user) : renderNoAudit()}
 
-                                <!-- Progress bar -->
-                                <div style="margin-bottom:12px;">
-                                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px; color:var(--color-gray-500);">
-                                        <span>Checklist progress</span>
-                                        <span>${progress.percent}% (${progress.done}/${progress.total})</span>
-                                    </div>
-                                    <div style="height:6px; background-color:var(--color-gray-200); border-radius:var(--radius-full); overflow:hidden;">
-                                        <div style="height:100%; width:${progress.percent}%; background-color:var(--color-primary); transition: width 0.3s;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="btn btn-secondary btn-sm inspect-audit-btn" data-id="${au.id}" style="width:100%;">
-                                ${au.status === 'Open' ? 'Perform Verification Checklist' : 'View Audit Report & Flags'}
-                            </button>
-                        </div>
-                    `;
-                }).join("")}
+            <!-- Discrepancy banner -->
+            <div id="discrepancy-banner" style="display:none; margin-bottom:18px;"></div>
+
+            <!-- Past Audits -->
+            <div class="action-card" style="margin-top:24px;">
+                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">Past Audit Cycles</h4>
+                ${renderPastAudits(audits.filter(a => a.status !== "Active"), user)}
             </div>
         </div>
     `;
 
-    if (user.role === 'Admin') {
-        container.querySelector("#launch-audit-btn").addEventListener("click", () => openLaunchAuditModal(user));
+    if (user.role === 'Admin' || user.role === 'Asset Manager') {
+        const startBtn = container.querySelector("#start-audit-btn");
+        if (startBtn) {
+            startBtn.addEventListener("click", () => openStartAuditModal(user));
+        }
     }
 
-    container.querySelectorAll(".inspect-audit-btn").forEach(btn => {
+    // Hook verification buttons
+    container.querySelectorAll(".verify-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            selectedAuditId = btn.dataset.id;
-            renderAudits(container, user);
+            handleVerify(btn.dataset.assetId, btn.dataset.result, activeAudit, user);
         });
     });
 
-    lucide.createIcons();
+    updateDiscrepancyBanner(activeAudit);
 }
 
-function calculateProgress(audit) {
-    const total = audit.items.length;
-    if (total === 0) return { percent: 0, done: 0, total: 0 };
-    const done = audit.items.filter(i => i.status !== "Pending").length;
-    return {
-        percent: Math.round((done / total) * 100),
-        done,
-        total
-    };
-}
+function renderActiveAudit(audit, user) {
+    const assets = Store.getAssets();
+    const checklist = audit.checklist || [];
 
-/* ==========================================================
-   Audit Detailed Checklist & Verification Workspace
-   ========================================================== */
-function renderAuditDetail(container, auditId, user) {
-    const audits = Store.getAudits();
-    const audit = audits.find(a => a.id === auditId);
-    
-    if (!audit) {
-        selectedAuditId = null;
-        renderAudits(container, user);
-        return;
-    }
+    const verified = checklist.filter(c => c.status === "Verified").length;
+    const missing  = checklist.filter(c => c.status === "Missing").length;
+    const damaged  = checklist.filter(c => c.status === "Damaged").length;
+    const pending  = checklist.filter(c => !c.status || c.status === "Pending").length;
+    const total = checklist.length;
 
-    // Check if current user is the assigned auditor
-    const isAuditor = audit.auditorIds.includes(user.id) || user.role === "Admin";
-    const isOpen = audit.status === "Open";
+    const progressPct = total > 0 ? Math.round(((verified + missing + damaged) / total) * 100) : 0;
 
-    container.innerHTML = `
-        <div class="audit-details-view">
-            <!-- Back trigger -->
-            <button class="btn btn-secondary btn-sm" id="back-audits-list-btn" style="margin-bottom:20px;">
-                <i data-lucide="arrow-left" style="width:16px; height:16px; vertical-align:middle; margin-right:4px;"></i> Back to Cycles
-            </button>
-
-            <!-- Summary header -->
-            <div class="action-card" style="margin-bottom:24px;">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; flex-wrap:wrap; gap:12px;">
-                    <div>
-                        <h2 style="font-weight:800; font-size:1.4rem;">${audit.name}</h2>
-                        <p style="color:var(--color-gray-500); font-size:0.875rem;">Scope: ${audit.scopeType} (${audit.scopeValue}) • Assigned Auditor: <strong>${audit.auditorNames}</strong></p>
-                    </div>
-                    ${(isOpen && user.role === 'Admin') ? `
-                        <button class="btn btn-danger" id="close-audit-btn">
-                            <i data-lucide="lock"></i> Close Cycle & Generate Report
-                        </button>
-                    ` : ''}
+    return `
+        <div class="action-card" style="margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+                <div>
+                    <div style="font-size:1rem; font-weight:700; color:var(--color-gray-900);">${audit.name}</div>
+                    <div style="font-size:0.8rem; color:var(--color-gray-500); margin-top:2px;">Started ${audit.startDate} · ${audit.scope || "All assets"}</div>
                 </div>
-
-                ${!isOpen ? `
-                    <div style="background-color: var(--color-danger-light); padding:14px; border-radius:var(--radius-md); border:1px solid #fecaca; margin-top:14px;">
-                        <h4 style="font-size:0.9rem; font-weight:700; color:#991b1b; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                            <i data-lucide="alert-triangle"></i> Closed Audit Cycle Discrepancy Report
-                        </h4>
-                        ${audit.discrepancies.length === 0 ? `
-                            <p style="font-size:0.8rem; color:#991b1b;">Audit completed with zero discrepancies. All physical assets verified in stock.</p>
-                        ` : `
-                            <ul style="font-size:0.8rem; color:#991b1b; list-style:inside; padding-left:4px;">
-                                ${audit.discrepancies.map(d => `
-                                    <li style="margin-bottom:4px;">
-                                        <strong>Asset ${d.assetId} (${d.assetName}):</strong> ${d.issue}. Details: ${d.notes || 'No description notes'}
-                                    </li>
-                                `).join("")}
-                            </ul>
-                        `}
-                    </div>
-                ` : ''}
+                <span class="badge badge-allocated" style="font-size:0.75rem;">Active</span>
             </div>
 
-            <!-- Verification Items table -->
+            <!-- Progress bar -->
+            <div style="background:var(--color-gray-200); border-radius:9999px; height:8px; margin-bottom:10px; overflow:hidden;">
+                <div style="background:var(--color-primary); height:100%; border-radius:9999px; width:${progressPct}%; transition:width 0.4s;"></div>
+            </div>
+            <div style="display:flex; gap:18px; font-size:0.8rem; margin-bottom:18px;">
+                <span style="color:#10b981; font-weight:700;">✓ ${verified} Verified</span>
+                <span style="color:#ef4444; font-weight:700;">✗ ${missing} Missing</span>
+                <span style="color:#f59e0b; font-weight:700;">⚠ ${damaged} Damaged</span>
+                <span style="color:var(--color-gray-400);">○ ${pending} Pending</span>
+            </div>
+
+            <!-- Verification Checklist Table -->
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Asset Tag</th>
-                            <th>Asset Name</th>
-                            <th>Current Registered Location</th>
-                            <th>Verification Status</th>
-                            <th>Verification Notes</th>
-                            ${(isOpen && isAuditor) ? `<th style="text-align:right;">Verify Actions</th>` : ''}
+                            <th>Name</th>
+                            <th>Expected Holder</th>
+                            <th>Verification</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${audit.items.map(item => {
-                            let sClass = "badge-pending";
-                            if (item.status === "Verified") sClass = "badge-available";
-                            else if (item.status === "Missing") sClass = "badge-lost";
-                            else if (item.status === "Damaged") sClass = "badge-undermaintenance";
-
+                        ${checklist.map(item => {
+                            const asset = assets.find(a => a.id === item.assetId);
+                            const isDone = item.status && item.status !== "Pending";
                             return `
-                                <tr>
-                                    <td><strong>${item.assetId}</strong></td>
-                                    <td style="font-weight:600;">${item.assetName}</td>
-                                    <td>${item.location}</td>
-                                    <td><span class="badge ${sClass}">${item.status}</span></td>
+                                <tr style="${isDone ? 'opacity:0.7;' : ''}">
+                                    <td style="font-family:monospace; font-weight:700;">${item.assetId}</td>
+                                    <td>${asset ? asset.name : item.assetId}</td>
+                                    <td>${item.expectedHolder || (asset ? asset.currentHolderName || '—' : '—')}</td>
                                     <td>
-                                        ${isOpen && isAuditor ? `
-                                            <input type="text" class="form-control item-notes-input" data-id="${item.assetId}" value="${item.notes || ''}" placeholder="Add check observations..." style="padding:6px; font-size:0.8rem;">
-                                        ` : `
-                                            <span style="font-size:0.85rem; color:var(--color-gray-600);">${item.notes || '<span class="color-gray-400">—</span>'}</span>
-                                        `}
+                                        ${!isDone ? `
+                                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                                <button class="btn btn-sm verify-btn" data-asset-id="${item.assetId}" data-result="Verified" style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:0.75rem; font-weight:700;">✓ Verified</button>
+                                                <button class="btn btn-sm verify-btn" data-asset-id="${item.assetId}" data-result="Missing"  style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; font-size:0.75rem; font-weight:700;">✗ Missing</button>
+                                                <button class="btn btn-sm verify-btn" data-asset-id="${item.assetId}" data-result="Damaged"  style="background:#fef3c7; color:#b45309; border:1px solid #fcd34d; font-size:0.75rem; font-weight:700;">⚠ Damaged</button>
+                                            </div>
+                                        ` : `<span style="font-size:0.8rem; color:var(--color-gray-400); font-style:italic;">Already recorded</span>`}
                                     </td>
-                                    ${(isOpen && isAuditor) ? `
-                                        <td style="text-align:right; white-space:nowrap;">
-                                            <button class="btn btn-secondary btn-sm mark-item-btn" data-id="${item.assetId}" data-status="Verified" style="border-color:var(--color-success); color:var(--color-success);">Verify</button>
-                                            <button class="btn btn-secondary btn-sm mark-item-btn" data-id="${item.assetId}" data-status="Missing" style="border-color:var(--color-danger); color:var(--color-danger);">Missing</button>
-                                            <button class="btn btn-secondary btn-sm mark-item-btn" data-id="${item.assetId}" data-status="Damaged" style="border-color:var(--color-warning); color:var(--color-warning);">Damaged</button>
-                                        </td>
-                                    ` : ''}
+                                    <td>
+                                        ${item.status && item.status !== "Pending"
+                                            ? `<span class="badge ${item.status === 'Verified' ? 'badge-available' : item.status === 'Missing' ? 'badge-cancelled' : 'badge-allocated'}">${item.status}</span>`
+                                            : `<span class="badge" style="background:var(--color-gray-200); color:var(--color-gray-500);">Pending</span>`
+                                        }
+                                    </td>
                                 </tr>
                             `;
                         }).join("")}
                     </tbody>
                 </table>
             </div>
+
+            ${(user.role === 'Admin' || user.role === 'Asset Manager') && pending === 0 ? `
+                <div style="margin-top:16px; text-align:right;">
+                    <button id="close-audit-btn" class="btn btn-primary" style="background:var(--color-gray-900); color:white;">Close & Archive Audit</button>
+                </div>
+            ` : ''}
         </div>
     `;
-
-    // Back listener
-    container.querySelector("#back-audits-list-btn").addEventListener("click", () => {
-        selectedAuditId = null;
-        renderAudits(container, user);
-    });
-
-    if (isOpen && isAuditor) {
-        // Mark actions
-        container.querySelectorAll(".mark-item-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const assetId = btn.dataset.id;
-                const status = btn.dataset.status;
-                const notesInput = container.querySelector(`.item-notes-input[data-id="${assetId}"]`);
-                const notes = notesInput ? notesInput.value.trim() : "";
-
-                const res = Store.updateAuditItem(auditId, assetId, status, notes, user.name);
-                if (res.success) {
-                    showToast(`Marked ${assetId} as ${status}.`, "success");
-                    renderAuditDetail(container, auditId, user);
-                } else {
-                    showToast(res.message, "danger");
-                }
-            });
-        });
-
-        // Notes change listener (auto-saves note locally when typing ends)
-        container.querySelectorAll(".item-notes-input").forEach(input => {
-            input.addEventListener("blur", () => {
-                const assetId = input.dataset.id;
-                const notes = input.value.trim();
-                const item = audit.items.find(i => i.assetId === assetId);
-                
-                const res = Store.updateAuditItem(auditId, assetId, item.status, notes, user.name);
-                if (res.success) {
-                    showToast(`Notes saved for ${assetId}.`, "info");
-                }
-            });
-        });
-    }
-
-    if (isOpen && user.role === "Admin") {
-        // Close audit cycle listener
-        container.querySelector("#close-audit-btn").addEventListener("click", () => {
-            const checklist = calculateProgress(audit);
-            const isFinished = checklist.done === checklist.total;
-
-            const confirmHtml = `
-                <div style="text-align:center; padding:10px 0;">
-                    <p style="font-weight:600; font-size:1.05rem; margin-bottom:8px;">Are you sure you want to close this audit cycle?</p>
-                    ${!isFinished ? `
-                        <p style="font-size:0.85rem; color:var(--color-danger); margin-bottom:12px; font-weight:500;">
-                            Warning: ${checklist.total - checklist.done} items are still PENDING verification.
-                            Closing the cycle now will freeze it and auto-generate the discrepancy logs.
-                        </p>
-                    ` : `
-                        <p style="font-size:0.85rem; color:var(--color-gray-600); margin-bottom:12px;">
-                            All ${checklist.total} items checked. Closing will freeze changes and resolve discrepancy states.
-                        </p>
-                    `}
-                </div>
-            `;
-
-            openModal("Confirm Audit Freeze", confirmHtml, () => {
-                const res = Store.closeAuditCycle(auditId, user.name);
-                if (res.success) {
-                    showToast(`Audit cycle closed. Discrepancy reports locked.`, "success");
-                    renderAuditDetail(container, auditId, user);
-                    return true;
-                } else {
-                    showToast(res.message, "danger");
-                    return false;
-                }
-            });
-        });
-    }
-
-    lucide.createIcons();
 }
 
-function openLaunchAuditModal(user) {
-    const employees = Store.getEmployees().filter(e => e.status === "Active");
-    const departments = Store.getDepartments().filter(d => d.status === "Active");
-    const assets = Store.getAssets();
+function renderNoAudit() {
+    return `
+        <div class="action-card" style="text-align:center; padding:48px; background:var(--color-gray-50);">
+            <i data-lucide="clipboard-check" style="width:48px; height:48px; color:var(--color-gray-300); margin-bottom:12px;"></i>
+            <h4 style="color:var(--color-gray-500); font-weight:600;">No Active Audit Cycle</h4>
+            <p style="color:var(--color-gray-400); font-size:0.875rem; margin-top:8px;">Start an audit cycle to begin verifying assets across your organization.</p>
+        </div>
+    `;
+}
 
-    // Group locations
-    const locations = [...new Set(assets.map(a => a.location).filter(Boolean))];
+function renderPastAudits(pastAudits, user) {
+    if (!pastAudits.length) {
+        return `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No completed audits yet.</p>`;
+    }
+
+    return `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            ${pastAudits.map(a => {
+                const checklist = a.checklist || [];
+                const verified = checklist.filter(c => c.status === "Verified").length;
+                const missing  = checklist.filter(c => c.status === "Missing").length;
+                const damaged  = checklist.filter(c => c.status === "Damaged").length;
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border:1px solid var(--color-gray-200); border-radius:var(--radius-md); font-size:0.875rem;">
+                        <div>
+                            <div style="font-weight:700; color:var(--color-gray-900);">${a.name}</div>
+                            <div style="color:var(--color-gray-500); font-size:0.8rem;">${a.startDate} → ${a.endDate || 'Ongoing'} · ${checklist.length} assets</div>
+                        </div>
+                        <div style="display:flex; gap:16px; font-size:0.8rem; font-weight:700;">
+                            <span style="color:#10b981;">✓ ${verified}</span>
+                            <span style="color:#ef4444;">✗ ${missing}</span>
+                            <span style="color:#f59e0b;">⚠ ${damaged}</span>
+                        </div>
+                        <span class="badge ${a.status === 'Completed' ? 'badge-available' : 'badge-cancelled'}">${a.status}</span>
+                    </div>
+                `;
+            }).join("")}
+        </div>
+    `;
+}
+
+function handleVerify(assetId, result, audit, user) {
+    const audits = Store.getAudits();
+    const targetAudit = audits.find(a => a.id === audit.id);
+    const item = targetAudit.checklist.find(c => c.assetId === assetId);
+    if (!item) return;
+
+    item.status = result;
+    item.verifiedBy = user.name;
+    item.verifiedDate = new Date().toISOString().split("T")[0];
+    Store.saveAudits(audits);
+
+    Store.logActivity(user.name, `Asset ${result}`, `${assetId} marked ${result} in audit ${audit.name}`);
+    showToast(`${assetId} marked as ${result}.`, result === "Verified" ? "success" : "warning");
+
+    // Re-render
+    renderAudits(document.querySelector(".audits-wrapper")?.closest(".screen-content") || document.querySelector("[id^='screen-']"), user);
+}
+
+function updateDiscrepancyBanner(audit) {
+    const banner = document.getElementById("discrepancy-banner");
+    if (!banner || !audit) return;
+
+    const checklist = audit.checklist || [];
+    const discrepancies = checklist.filter(c => c.status === "Missing" || c.status === "Damaged");
+
+    if (discrepancies.length > 0) {
+        banner.style.display = "block";
+        banner.innerHTML = `
+            <div style="background:#fefce8; border:1px solid #fde047; border-radius:var(--radius-md); padding:12px 16px; display:flex; gap:10px; align-items:flex-start; font-size:0.875rem;">
+                <i data-lucide="alert-triangle" style="width:18px; height:18px; color:#b45309; flex-shrink:0; margin-top:1px;"></i>
+                <div>
+                    <strong style="color:#92400e;">Discrepancy Report:</strong>
+                    <span style="color:#78350f; margin-left:6px;">${discrepancies.length} asset${discrepancies.length !== 1 ? 's' : ''} flagged — ${discrepancies.filter(d => d.status === 'Missing').length} missing, ${discrepancies.filter(d => d.status === 'Damaged').length} damaged</span>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+    }
+}
+
+function openStartAuditModal(user) {
+    const assets = Store.getAssets();
+    const departments = Store.getDepartments();
 
     const modalHtml = `
         <div class="form-group">
-            <label for="aud-name">Audit Cycle Name</label>
-            <input type="text" id="aud-name" class="form-control" placeholder="e.g. 2026 IT Lab Equipment Inventory" required>
+            <label for="audit-name">Audit Name</label>
+            <input type="text" id="audit-name" class="form-control" placeholder="e.g. Q3 2025 Physical Audit">
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="aud-scope-type">Audit Scope Scope Type</label>
-                <select id="aud-scope-type" class="form-control">
-                    <option value="All">All Assets</option>
-                    <option value="Department">By Department</option>
-                    <option value="Location">By Physical Location</option>
+                <label for="audit-scope-dept">Scope by Department (optional)</label>
+                <select id="audit-scope-dept" class="form-control">
+                    <option value="">All Departments</option>
+                    ${departments.map(d => `<option value="${d.id}">${d.name}</option>`).join("")}
                 </select>
             </div>
             <div class="form-group">
-                <label for="aud-scope-val">Scope Value</label>
-                <select id="aud-scope-val" class="form-control" disabled>
-                    <option value="">Select scope target...</option>
-                </select>
+                <label for="audit-start">Start Date</label>
+                <input type="date" id="audit-start" class="form-control" value="${new Date().toISOString().split('T')[0]}">
             </div>
         </div>
-        <div class="form-group">
-            <label for="aud-auditor">Assigned Auditor</label>
-            <select id="aud-auditor" class="form-control" required>
-                <option value="">Select Auditor Employee</option>
-                ${employees.map(e => `<option value="${e.id}">${e.name} (${e.role})</option>`).join("")}
-            </select>
+        <div style="font-size:0.8rem; color:var(--color-gray-500); margin-top:4px;">
+            A checklist will be generated for all matching assets.
         </div>
     `;
 
-    openModal("Launch Master Verification Audit", modalHtml, () => {
-        const name = document.getElementById("aud-name").value.trim();
-        const type = document.getElementById("aud-scope-type").value;
-        const val = document.getElementById("aud-scope-val").value;
-        const auditorId = document.getElementById("aud-auditor").value;
+    openModal("Start Audit Cycle", modalHtml, () => {
+        const name = document.getElementById("audit-name").value.trim();
+        const deptId = document.getElementById("audit-scope-dept").value;
+        const startDate = document.getElementById("audit-start").value;
 
-        if (!name || !auditorId) {
-            showToast("Audit Name and Auditor are required.", "danger");
+        if (!name) {
+            showToast("Please provide an audit name.", "warning");
             return false;
         }
 
-        if (type !== "All" && !val) {
-            showToast("Please choose a scope value matching selected type.", "danger");
+        const scopeAssets = deptId
+            ? assets.filter(a => {
+                const emps = Store.getEmployees();
+                const holder = emps.find(e => e.id === a.currentHolderId);
+                return holder && holder.departmentId === deptId;
+              })
+            : assets;
+
+        if (scopeAssets.length === 0) {
+            showToast("No assets in scope. Add assets first.", "warning");
             return false;
         }
 
-        const res = Store.createAuditCycle(name, type, val, [auditorId], user.name);
-        if (res.success) {
-            showToast(`Audit cycle "${name}" launched successfully.`, "success");
-            selectedAuditId = res.audit.id; // Focus on the new audit detail immediately
-            renderAudits(document.getElementById("content-viewport"), user);
-            return true;
-        } else {
-            showToast(res.message, "danger");
-            return false;
-        }
-    });
+        const audits = Store.getAudits();
+        audits.push({
+            id: `AUD-${Date.now().toString().slice(-5)}`,
+            name,
+            scope: deptId ? departments.find(d => d.id === deptId)?.name : "All assets",
+            startDate,
+            endDate: null,
+            status: "Active",
+            createdBy: user.name,
+            checklist: scopeAssets.map(a => ({
+                assetId: a.id,
+                expectedHolder: a.currentHolderName || "—",
+                status: "Pending",
+                verifiedBy: null,
+                verifiedDate: null
+            }))
+        });
+        Store.saveAudits(audits);
 
-    // Handle scope type dropdown change
-    const scopeTypeSelect = document.getElementById("aud-scope-type");
-    const scopeValSelect = document.getElementById("aud-scope-val");
+        Store.logActivity(user.name, "Audit Started", `${name} — ${scopeAssets.length} assets in scope`);
+        showToast(`Audit "${name}" started with ${scopeAssets.length} assets.`, "success");
 
-    scopeTypeSelect.addEventListener("change", () => {
-        const type = scopeTypeSelect.value;
-        if (type === "All") {
-            scopeValSelect.disabled = true;
-            scopeValSelect.innerHTML = `<option value="">Entire Inventory</option>`;
-            return;
-        }
-
-        scopeValSelect.disabled = false;
-        if (type === "Department") {
-            scopeValSelect.innerHTML = departments.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
-        } else {
-            scopeValSelect.innerHTML = locations.map(l => `<option value="${l}">${l}</option>`).join("");
-        }
-    });
+        const mainEl = document.querySelector(".audits-wrapper")?.closest("[class*='screen']") || document.querySelector("main > div");
+        if (mainEl) renderAudits(mainEl, user);
+        return true;
+    }, "Start Audit");
 }

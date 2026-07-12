@@ -1,383 +1,322 @@
-/* ====================================================
-   AssetFlow - Asset Allocations & Transfers Screen
-   ==================================================== */
+/* =============================================================
+   AssetFlow - Allocations & Transfer Screen (Wireframe Aligned: Screen 5)
+   ============================================================= */
 
 import { Store } from "../store.js";
-import { openModal, showToast } from "../app.js";
-
-let activeTab = "active"; // active, transfers
+import { showToast, openModal } from "../app.js";
 
 export function renderAllocations(container, user) {
     container.innerHTML = `
-        <div class="tab-container">
-            <div class="page-action-bar">
-                <nav class="tab-nav" style="border-bottom:none; gap:16px;">
-                    <button class="tab-btn ${activeTab === 'active' ? 'active' : ''}" data-tab="active">
-                        Active Allocations & Returns
-                    </button>
-                    <button class="tab-btn ${activeTab === 'transfers' ? 'active' : ''}" data-tab="transfers">
-                        Asset Transfer Requests
-                    </button>
-                </nav>
+        <div class="allocations-wrapper">
+            <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:18px;">Asset Allocation</h3>
 
-                ${(user.role === 'Admin' || user.role === 'Asset Manager') ? `
-                    <button class="btn btn-primary" id="trigger-allocate-btn">
-                        <i data-lucide="plus"></i> Create Allocation
-                    </button>
-                ` : ''}
+            <!-- Asset search for allocation -->
+            <div class="action-card" style="margin-bottom:18px;">
+                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">Allocate or transfer an asset</h4>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                    <div class="form-group" style="flex:1; min-width:160px; margin-bottom:0;">
+                        <label for="alloc-asset-search">Asset Tag</label>
+                        <input type="text" id="alloc-asset-search" class="form-control" placeholder="e.g. AF-0114" autocomplete="off">
+                    </div>
+                    <button class="btn btn-primary" id="alloc-lookup-btn">Look up</button>
+                </div>
+                <!-- Conflict banner injected here dynamically -->
+                <div id="alloc-conflict-banner" style="display:none; margin-top:14px;"></div>
+                <!-- Allocation form injected here dynamically -->
+                <div id="alloc-form" style="display:none; margin-top:14px;"></div>
             </div>
 
-            <div class="tab-panel" id="allocation-tab-content">
-                <!-- Tab specific items populated dynamically -->
+            <!-- My Allocations List -->
+            <div class="action-card" style="margin-bottom:18px;">
+                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">My Current Allocations</h4>
+                <div id="my-allocations-list"></div>
+            </div>
+
+            <!-- Transfer History -->
+            <div class="action-card">
+                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">Transfer History</h4>
+                <div id="transfer-history-list"></div>
             </div>
         </div>
     `;
 
-    // Hook up tab buttons
-    container.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            container.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            activeTab = btn.dataset.tab;
-            renderTabContent(user);
-        });
+    renderMyAllocations(user);
+    renderTransferHistory(user);
+
+    document.getElementById("alloc-lookup-btn").addEventListener("click", () => {
+        const tag = document.getElementById("alloc-asset-search").value.trim().toUpperCase();
+        if (!tag) { showToast("Please enter an asset tag.", "warning"); return; }
+        lookupAssetForAllocation(tag, user);
     });
 
-    if (user.role === 'Admin' || user.role === 'Asset Manager') {
-        container.querySelector("#trigger-allocate-btn").addEventListener("click", () => openAllocateModal(user));
-    }
-
-    renderTabContent(user);
+    document.getElementById("alloc-asset-search").addEventListener("keydown", e => {
+        if (e.key === "Enter") document.getElementById("alloc-lookup-btn").click();
+    });
 }
 
-function renderTabContent(user) {
-    const contentPanel = document.getElementById("allocation-tab-content");
-    if (activeTab === "active") {
-        renderActiveAllocations(contentPanel, user);
-    } else {
-        renderTransfersList(contentPanel, user);
+function renderMyAllocations(user) {
+    const list = Store.getAllocations().filter(a => {
+        if (user.role === 'Admin' || user.role === 'Asset Manager') return true;
+        return a.holderId === user.id;
+    });
+
+    const el = document.getElementById("my-allocations-list");
+    if (!el) return;
+
+    if (!list.length) {
+        el.innerHTML = `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No allocations found.</p>`;
+        return;
     }
+
+    el.innerHTML = `
+        <table class="table">
+            <thead>
+                <tr><th>Asset Tag</th><th>Asset Name</th><th>Holder</th><th>Dept</th><th>Since</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
+            </thead>
+            <tbody>
+                ${list.slice(0, 10).map(a => `
+                    <tr>
+                        <td style="font-family:monospace; font-weight:700;">${a.assetId}</td>
+                        <td>${a.assetName}</td>
+                        <td>${a.holderName}</td>
+                        <td>${a.department || '—'}</td>
+                        <td style="font-size:0.8rem; color:var(--color-gray-500);">${a.date}</td>
+                        <td><span class="badge badge-available">${a.status}</span></td>
+                        <td style="text-align:right;">
+                            ${(user.role === 'Admin' || user.role === 'Asset Manager') ? `
+                                <button class="btn btn-secondary btn-sm revoke-btn" data-id="${a.id}">Revoke</button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join("")}
+            </tbody>
+        </table>
+    `;
+
+    el.querySelectorAll(".revoke-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const allocId = btn.dataset.id;
+            const allocs = Store.getAllocations();
+            const alloc = allocs.find(a => a.id === allocId);
+            if (!alloc) return;
+
+            openModal("Revoke Allocation", `<p>Revoke allocation of <strong>${alloc.assetName}</strong> from <strong>${alloc.holderName}</strong>?</p>`, () => {
+                const assets = Store.getAssets();
+                const asset = assets.find(a => a.id === alloc.assetId);
+                if (asset) {
+                    asset.status = "Available";
+                    asset.currentHolderId = "";
+                    asset.currentHolderName = "";
+                    asset.history.push({ date: new Date().toISOString().split("T")[0], action: "Revocation", user: user.name, details: `Revoked from ${alloc.holderName}` });
+                    Store.saveAssets(assets);
+                }
+
+                alloc.status = "Revoked";
+                Store.saveAllocations(allocs);
+                Store.logActivity(user.name, "Allocation Revoked", `${alloc.assetName} revoked from ${alloc.holderName}`);
+                showToast(`Allocation revoked for ${alloc.assetName}.`, "success");
+                renderMyAllocations(user);
+                return true;
+            }, "Revoke");
+        });
+    });
+}
+
+function renderTransferHistory(user) {
+    const history = Store.getTransfers().slice(0, 8);
+    const el = document.getElementById("transfer-history-list");
+    if (!el) return;
+
+    if (!history.length) {
+        el.innerHTML = `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No transfers recorded.</p>`;
+        return;
+    }
+
+    el.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            ${history.map(t => `
+                <div style="padding:10px 14px; border:1px solid var(--color-gray-200); border-radius:var(--radius-md); font-size:0.85rem; background:var(--color-gray-50);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-weight:700;">${t.assetId} · ${t.assetName}</span>
+                        <span class="badge ${t.status === 'Completed' ? 'badge-available' : 'badge-allocated'}">${t.status}</span>
+                    </div>
+                    <div style="color:var(--color-gray-600);">
+                        <i data-lucide="arrow-right-left" style="width:12px; height:12px;"></i>
+                        From <strong>${t.fromName}</strong> → <strong>${t.toName}</strong>
+                    </div>
+                    <div style="color:var(--color-gray-400); font-size:0.775rem; margin-top:3px;">${t.date} · Reason: ${t.reason || '—'}</div>
+                </div>
+            `).join("")}
+        </div>
+    `;
     lucide.createIcons();
 }
 
-/* ====================================================
-   Tab 1: Active Allocations & Returns
-   ==================================================== */
-function renderActiveAllocations(container, user) {
-    const allocations = Store.getAllocations();
-    const activeAllocations = allocations.filter(a => a.status === "Active");
-    const todayStr = new Date().toISOString().split("T")[0];
+/* Wireframe: Inline double-allocation conflict warning banner */
+function lookupAssetForAllocation(tag, user) {
+    const assets = Store.getAssets();
+    const employees = Store.getEmployees();
+    const depts = Store.getDepartments();
 
-    // Filter allocations by role permissions
-    // Employees can only see their own active allocations
-    // Department Heads can see allocations in their department
-    // Admins and Asset Managers can see all allocations
-    let viewAllocations = [...activeAllocations];
-    if (user.role === "Employee") {
-        viewAllocations = activeAllocations.filter(a => a.employeeId === user.id);
-    } else if (user.role === "Department Head") {
-        const employees = Store.getEmployees();
-        const deptEmpIds = employees.filter(e => e.departmentId === user.departmentId).map(e => e.id);
-        viewAllocations = activeAllocations.filter(a => deptEmpIds.includes(a.employeeId));
-    }
+    const asset = assets.find(a => a.id === tag);
+    const conflictBanner = document.getElementById("alloc-conflict-banner");
+    const formEl = document.getElementById("alloc-form");
 
-    if (viewAllocations.length === 0) {
-        container.innerHTML = `
-            <div class="action-card" style="text-align:center; padding: 48px; border:1px dashed var(--color-gray-300);">
-                <i data-lucide="package-open" style="width:48px; height:48px; color:var(--color-gray-400); margin-bottom:12px;"></i>
-                <p style="color:var(--color-gray-500);">No active asset allocations found.</p>
-            </div>
-        `;
+    if (!asset) {
+        showToast(`Asset "${tag}" not found.`, "danger");
+        conflictBanner.style.display = "none";
+        formEl.style.display = "none";
         return;
     }
 
-    container.innerHTML = `
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Allocation ID</th>
-                        <th>Asset Tag</th>
-                        <th>Asset Name</th>
-                        <th>Assigned Employee</th>
-                        <th>Allocation Date</th>
-                        <th>Expected Return Date</th>
-                        <th>Status</th>
-                        <th style="text-align:right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${viewAllocations.map(a => {
-                        const isOverdue = a.expectedReturnDate && a.expectedReturnDate < todayStr;
-                        return `
-                            <tr>
-                                <td><strong>${a.id}</strong></td>
-                                <td><strong>${a.assetId}</strong></td>
-                                <td>${a.assetName}</td>
-                                <td>${a.employeeName}</td>
-                                <td>${a.allocationDate}</td>
-                                <td style="color: ${isOverdue ? 'var(--color-danger)' : 'inherit'}; font-weight: ${isOverdue ? '600' : 'normal'};">
-                                    ${a.expectedReturnDate || '<span class="color-gray-400">Indefinite</span>'}
-                                </td>
-                                <td>
-                                    <span class="badge ${isOverdue ? 'badge-lost' : 'badge-allocated'}">
-                                        ${isOverdue ? 'Overdue' : 'Active'}
-                                    </span>
-                                </td>
-                                <td style="text-align:right;">
-                                    ${(user.role === 'Admin' || user.role === 'Asset Manager') ? `
-                                        <button class="btn btn-secondary btn-sm return-asset-action" data-asset="${a.assetId}" data-name="${a.assetName}">Check-In Return</button>
-                                    ` : `
-                                        <span style="font-size:0.8rem; color:var(--color-gray-400);">Read-only</span>
-                                    `}
-                                </td>
-                            </tr>
-                        `;
-                    }).join("")}
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    // Hook up Check-In action
-    container.querySelectorAll(".return-asset-action").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const assetId = btn.dataset.asset;
-            const assetName = btn.dataset.name;
-
-            const modalHtml = `
-                <div class="form-group">
-                    <label>Returning Asset</label>
-                    <input type="text" class="form-control" value="${assetName} (${assetId})" disabled>
+    // Determine if already allocated — wireframe shows red inline banner
+    if (asset.status === "Allocated" && asset.currentHolderName) {
+        conflictBanner.style.display = "block";
+        conflictBanner.innerHTML = `
+            <div class="banner-alert-red" style="border-radius:var(--radius-md); padding:12px 16px; font-size:0.875rem; gap:10px;">
+                <i data-lucide="alert-circle" style="width:18px; height:18px; flex-shrink:0;"></i>
+                <div>
+                    <strong>Already Allocated to ${asset.currentHolderName}.</strong>
+                    To proceed, submit a transfer request below.
                 </div>
+            </div>
+        `;
+        lucide.createIcons();
+        renderTransferForm(asset, employees, depts, user, formEl, true);
+    } else {
+        conflictBanner.style.display = "none";
+        renderAllocateForm(asset, employees, depts, user, formEl);
+    }
+}
+
+function renderAllocateForm(asset, employees, depts, user, formEl) {
+    formEl.style.display = "block";
+    formEl.innerHTML = `
+        <div style="border:1px solid var(--color-gray-200); border-radius:var(--radius-md); padding:16px; background:var(--color-gray-50);">
+            <div style="font-size:0.9rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">
+                Allocate: <span style="color:var(--color-primary);">${asset.id}</span> · ${asset.name}
+            </div>
+            <div class="form-row">
                 <div class="form-group">
-                    <label for="ret-condition">Verified Asset Condition</label>
-                    <select id="ret-condition" class="form-control">
-                        <option value="Excellent">Excellent</option>
-                        <option value="Good" selected>Good</option>
-                        <option value="Fair">Fair</option>
-                        <option value="Poor">Poor</option>
+                    <label for="alloc-to-emp">Allocate To</label>
+                    <select id="alloc-to-emp" class="form-control">
+                        <option value="">Select employee...</option>
+                        ${employees.filter(e => e.status === 'Active').map(e => `<option value="${e.id}">${e.name}</option>`).join("")}
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="ret-notes">Check-In Return Notes</label>
-                    <textarea id="ret-notes" class="form-control" rows="3" placeholder="Identify any issues or wear and tear..."></textarea>
+                    <label for="alloc-return-date">Expected Return</label>
+                    <input type="date" id="alloc-return-date" class="form-control">
                 </div>
-            `;
-
-            openModal("Check-In Asset Return", modalHtml, () => {
-                const cond = document.getElementById("ret-condition").value;
-                const notes = document.getElementById("ret-notes").value.trim();
-
-                const res = Store.returnAsset(assetId, cond, notes, user.name);
-                if (res.success) {
-                    showToast(`Asset ${assetId} returned and checked in.`, "success");
-                    renderTabContent(user);
-                    return true;
-                } else {
-                    showToast(res.message, "danger");
-                    return false;
-                }
-            }, "Check-In");
-        });
-    });
-}
-
-/* ====================================================
-   Tab 2: Asset Transfer Requests
-   ==================================================== */
-function renderTransfersList(container, user) {
-    const transfers = Store.getTransfers();
-    
-    // Authorization filter:
-    // Employee: see transfers involving them (as sender or receiver)
-    // Dept Head: see transfers involving employees in their department
-    // Admin / Asset Manager: see all transfers
-    let viewTransfers = [...transfers];
-    if (user.role === "Employee") {
-        viewTransfers = transfers.filter(t => t.fromEmployeeId === user.id || t.toEmployeeId === user.id);
-    } else if (user.role === "Department Head") {
-        const employees = Store.getEmployees();
-        const deptEmpIds = employees.filter(e => e.departmentId === user.departmentId).map(e => e.id);
-        viewTransfers = transfers.filter(t => deptEmpIds.includes(t.fromEmployeeId) || deptEmpIds.includes(t.toEmployeeId));
-    }
-
-    if (viewTransfers.length === 0) {
-        container.innerHTML = `
-            <div class="action-card" style="text-align:center; padding: 48px; border:1px dashed var(--color-gray-300);">
-                <i data-lucide="repeat" style="width:48px; height:48px; color:var(--color-gray-400); margin-bottom:12px;"></i>
-                <p style="color:var(--color-gray-500);">No asset transfer requests found.</p>
             </div>
-        `;
-        return;
-    }
-
-    // Role eligibility check for action buttons
-    const canApprove = (user.role === "Admin" || user.role === "Asset Manager" || user.role === "Department Head");
-
-    container.innerHTML = `
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Request ID</th>
-                        <th>Asset ID</th>
-                        <th>Asset Name</th>
-                        <th>Current Holder</th>
-                        <th>Target Holder</th>
-                        <th>Request Date</th>
-                        <th>Status</th>
-                        <th style="text-align:right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${viewTransfers.map(t => {
-                        let statusClass = "badge-pending";
-                        if (t.status === "Approved") statusClass = "badge-approved";
-                        else if (t.status === "Rejected") statusClass = "badge-rejected";
-
-                        return `
-                            <tr>
-                                <td><strong>${t.id}</strong></td>
-                                <td><strong>${t.assetId}</strong></td>
-                                <td>${t.assetName}</td>
-                                <td>${t.fromEmployeeName}</td>
-                                <td><strong>${t.toEmployeeName}</strong></td>
-                                <td>${t.requestDate}</td>
-                                <td><span class="badge ${statusClass}">${t.status}</span></td>
-                                <td style="text-align:right;">
-                                    ${(t.status === 'Pending' && canApprove) ? `
-                                        <button class="btn btn-secondary btn-sm approve-transfer-btn" data-id="${t.id}" style="border-color:var(--color-success); color:var(--color-success);">Approve</button>
-                                        <button class="btn btn-secondary btn-sm reject-transfer-btn" data-id="${t.id}" style="border-color:var(--color-danger); color:var(--color-danger);">Decline</button>
-                                    ` : `
-                                        <span style="font-size:0.8rem; color:var(--color-gray-400);">${t.status !== 'Pending' ? 'Completed' : 'No Action Access'}</span>
-                                    `}
-                                </td>
-                            </tr>
-                        `;
-                    }).join("")}
-                </tbody>
-            </table>
+            <div class="form-group">
+                <label for="alloc-notes">Notes</label>
+                <textarea id="alloc-notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+            </div>
+            <button class="btn btn-primary" id="submit-alloc-btn">Confirm Allocation</button>
         </div>
     `;
 
-    // Hook up Approve Action
-    container.querySelectorAll(".approve-transfer-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const res = Store.approveTransfer(id, user.name);
-            if (res.success) {
-                showToast("Transfer approved and asset successfully re-allocated.", "success");
-                renderTabContent(user);
-            } else {
-                showToast(res.message, "danger");
-            }
-        });
-    });
+    formEl.querySelector("#submit-alloc-btn").addEventListener("click", () => {
+        const empId = formEl.querySelector("#alloc-to-emp").value;
+        const returnDate = formEl.querySelector("#alloc-return-date").value;
+        const notes = formEl.querySelector("#alloc-notes").value;
 
-    // Hook up Reject Action
-    container.querySelectorAll(".reject-transfer-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const id = btn.dataset.id;
-            const res = Store.rejectTransfer(id, user.name);
-            if (res.success) {
-                showToast("Transfer request declined.", "warning");
-                renderTabContent(user);
-            } else {
-                showToast(res.message, "danger");
-            }
+        if (!empId) { showToast("Please select an employee.", "warning"); return; }
+
+        const emp = employees.find(e => e.id === empId);
+        const dept = depts.find(d => d.id === emp.departmentId);
+
+        const assets = Store.getAssets();
+        const target = assets.find(a => a.id === asset.id);
+        target.status = "Allocated";
+        target.currentHolderId = emp.id;
+        target.currentHolderName = emp.name;
+        target.expectedReturnDate = returnDate;
+        target.history.push({ date: new Date().toISOString().split("T")[0], action: "Allocation", user: user.name, details: `Allocated to ${emp.name} (${dept ? dept.name : ''})` });
+        Store.saveAssets(assets);
+
+        const allocs = Store.getAllocations();
+        allocs.push({
+            id: `ALLOC-${Date.now()}`,
+            assetId: asset.id,
+            assetName: asset.name,
+            holderId: emp.id,
+            holderName: emp.name,
+            department: dept ? dept.name : "",
+            departmentId: emp.departmentId,
+            expectedReturnDate: returnDate,
+            date: new Date().toISOString().split("T")[0],
+            notes,
+            status: "Active"
         });
+        Store.saveAllocations(allocs);
+        Store.logActivity(user.name, "Asset Allocated", `${asset.name} allocated to ${emp.name}`);
+        showToast(`${asset.name} allocated to ${emp.name}.`, "success");
+
+        formEl.style.display = "none";
+        document.getElementById("alloc-conflict-banner").style.display = "none";
+        document.getElementById("alloc-asset-search").value = "";
+        renderMyAllocations(user);
     });
 }
 
-/* ====================================================
-   Allocate Asset Form & Conflict Handling Dialogs
-   ==================================================== */
-function openAllocateModal(user) {
-    const assets = Store.getAssets().filter(a => !a.isShared && a.status !== "Retired" && a.status !== "Disposed");
-    const employees = Store.getEmployees().filter(e => e.status === "Active");
-    const departments = Store.getDepartments().filter(d => d.status === "Active");
-
-    const modalHtml = `
-        <div class="form-group">
-            <label for="alloc-asset">Select Asset to Allocate</label>
-            <select id="alloc-asset" class="form-control" required>
-                <option value="">Select Asset (Hardware/Furniture)</option>
-                ${assets.map(a => `<option value="${a.id}">${a.id} - ${a.name} [Status: ${a.status}]</option>`).join("")}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="alloc-emp">Assign to Employee</label>
-            <select id="alloc-emp" class="form-control" required>
-                <option value="">Select Employee</option>
-                ${employees.map(e => `<option value="${e.id}">${e.name} (${e.role})</option>`).join("")}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="alloc-expected-date">Expected Return Date (Optional)</label>
-            <input type="date" id="alloc-expected-date" class="form-control" min="${new Date().toISOString().split("T")[0]}">
-        </div>
-        <div class="form-group">
-            <label for="alloc-condition">Condition on Hand-out</label>
-            <select id="alloc-condition" class="form-control">
-                <option value="Excellent">Excellent</option>
-                <option value="Good" selected>Good</option>
-                <option value="Fair">Fair</option>
-                <option value="Poor">Poor</option>
-            </select>
+function renderTransferForm(asset, employees, depts, user, formEl, isConflict) {
+    formEl.style.display = "block";
+    formEl.innerHTML = `
+        <div style="border:1px solid var(--color-orange-200,#fed7aa); border-radius:var(--radius-md); padding:16px; background:#fff7ed;">
+            <div style="font-size:0.9rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">
+                Transfer Request: <span style="color:var(--color-primary);">${asset.id}</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>From</label>
+                    <input type="text" class="form-control" value="${asset.currentHolderName}" readonly style="background:var(--color-gray-100);">
+                </div>
+                <div class="form-group">
+                    <label for="transfer-to-emp">To</label>
+                    <select id="transfer-to-emp" class="form-control">
+                        <option value="">Select employee...</option>
+                        ${employees.filter(e => e.status === 'Active' && e.id !== asset.currentHolderId).map(e => `<option value="${e.id}">${e.name}</option>`).join("")}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="transfer-reason">Reason</label>
+                <textarea id="transfer-reason" class="form-control" rows="2" placeholder="State reason for transfer..."></textarea>
+            </div>
+            <button class="btn btn-primary" id="submit-transfer-btn">Submit Transfer Request</button>
         </div>
     `;
 
-    openModal("New Asset Allocation", modalHtml, () => {
-        const assetId = document.getElementById("alloc-asset").value;
-        const employeeId = document.getElementById("alloc-emp").value;
-        const expectedDate = document.getElementById("alloc-expected-date").value;
-        const condition = document.getElementById("alloc-condition").value;
+    formEl.querySelector("#submit-transfer-btn").addEventListener("click", () => {
+        const toEmpId = formEl.querySelector("#transfer-to-emp").value;
+        const reason = formEl.querySelector("#transfer-reason").value.trim();
 
-        if (!assetId || !employeeId) {
-            showToast("Please choose both an Asset and an Employee.", "danger");
-            return false;
-        }
+        if (!toEmpId) { showToast("Please select a recipient employee.", "warning"); return; }
+        if (!reason) { showToast("Please provide a reason.", "warning"); return; }
 
-        const res = Store.allocateAsset(assetId, employeeId, "", expectedDate, condition, user.name);
+        const toEmp = employees.find(e => e.id === toEmpId);
+        const transfers = Store.getTransfers();
+        transfers.push({
+            id: `TRF-${Date.now()}`,
+            assetId: asset.id,
+            assetName: asset.name,
+            fromId: asset.currentHolderId,
+            fromName: asset.currentHolderName,
+            toId: toEmp.id,
+            toName: toEmp.name,
+            reason,
+            date: new Date().toISOString().split("T")[0],
+            status: "Pending"
+        });
+        Store.saveTransfers(transfers);
+        Store.logActivity(user.name, "Transfer Requested", `${asset.name}: ${asset.currentHolderName} → ${toEmp.name}`);
+        showToast(`Transfer request submitted.`, "success");
 
-        if (res.success) {
-            showToast("Asset allocated successfully.", "success");
-            renderTabContent(user);
-            return true;
-        } else if (res.conflict) {
-            // Trigger CONFLICT DIALOG prompt
-            // Offer to raise a transfer request instead
-            closeModal();
-            setTimeout(() => {
-                const promptHtml = `
-                    <div style="text-align:center; padding:10px 0;">
-                        <i data-lucide="help-circle" style="width:48px; height:48px; color:var(--color-warning); margin-bottom:12px;"></i>
-                        <p style="font-weight:600; font-size:1.05rem; margin-bottom:8px;">Asset Already Allocated</p>
-                        <p style="font-size:0.875rem; color:var(--color-gray-600); margin-bottom:16px;">
-                            This asset is currently held by <strong>${res.currentHolder}</strong>.
-                            Would you like to initiate a Transfer Request from them to the new assignee instead?
-                        </p>
-                    </div>
-                `;
-
-                openModal("Initiate Asset Transfer?", promptHtml, () => {
-                    const transRes = Store.requestTransfer(assetId, employeeId, user.name);
-                    if (transRes.success) {
-                        showToast(`Transfer request successfully initiated.`, "info");
-                        activeTab = "transfers"; // Swap to transfers view
-                        renderTabContent(user);
-                        return true;
-                    } else {
-                        showToast(transRes.message, "danger");
-                        return false;
-                    }
-                }, "Yes, Request Transfer", "Cancel");
-            }, 300);
-            return false;
-        } else {
-            showToast(res.message, "danger");
-            return false;
-        }
-    }, "Allocate");
+        formEl.style.display = "none";
+        document.getElementById("alloc-conflict-banner").style.display = "none";
+        document.getElementById("alloc-asset-search").value = "";
+        renderTransferHistory(user);
+    });
 }
