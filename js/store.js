@@ -16,7 +16,8 @@ const STORAGE_KEYS = {
     maintenance: "assetflow_maintenance",
     audits: "assetflow_audits",
     logs: "assetflow_logs",
-    notifications: "assetflow_notifications"
+    notifications: "assetflow_notifications",
+    transfers: "assetflow_transfers"
 };
 
 const DEFAULT_DATA = {
@@ -60,6 +61,9 @@ const DEFAULT_DATA = {
     ],
     notifications: [
         { id: "NT-1001", title: "Welcome", message: "Your local AssetFlow workspace is ready.", type: "info", read: false, userId: null, createdAt: "2026-07-11T09:00:00.000Z" }
+    ],
+    transfers: [
+        { id: "TR-1001", assetId: "AF-1003", assetName: "Ergonomic Desk Chair", fromId: "emp-employee", fromName: "John Doe", toId: "emp-manager", toName: "Priya Sharma", reason: "Temporary reassignment", date: "2026-07-08", status: "Pending" }
     ]
 };
 
@@ -158,18 +162,28 @@ function normalizeAsset(asset) {
         bookable: asset.bookable ?? isShared,
         status: asset.status ?? "Available",
         currentHolderId: asset.currentHolderId ?? asset.current_holder_id ?? null,
-        customData: asset.customData ?? asset.custom_data ?? {}
+        currentHolderName: asset.currentHolderName ?? asset.current_holder_name ?? null,
+        expectedReturnDate: asset.expectedReturnDate ?? asset.expected_return_date ?? null,
+        customData: asset.customData ?? asset.custom_data ?? {},
+        history: asset.history ?? []
     };
 }
 
 function normalizeAllocation(allocation) {
     if (!allocation) return allocation;
+    const allocationDate = allocation.allocationDate ?? allocation.allocation_date ?? null;
+    const employeeId = allocation.employeeId ?? allocation.employee_id ?? null;
     return {
         id: allocation.id,
         assetId: allocation.assetId ?? allocation.asset_id ?? null,
-        employeeId: allocation.employeeId ?? allocation.employee_id ?? null,
+        assetName: allocation.assetName ?? allocation.asset_name ?? null,
+        employeeId,
+        holderId: employeeId,
+        holderName: allocation.holderName ?? allocation.holder_name ?? allocation.employeeName ?? null,
         departmentId: allocation.departmentId ?? allocation.department_id ?? null,
-        allocationDate: allocation.allocationDate ?? allocation.allocation_date ?? null,
+        department: allocation.department ?? null,
+        allocationDate,
+        date: allocationDate,
         expectedReturnDate: allocation.expectedReturnDate ?? allocation.expected_return_date ?? null,
         actualReturnDate: allocation.actualReturnDate ?? allocation.actual_return_date ?? null,
         conditionOnAllocation: allocation.conditionOnAllocation ?? allocation.condition_on_allocation ?? "Good",
@@ -180,43 +194,95 @@ function normalizeAllocation(allocation) {
 
 function normalizeBooking(booking) {
     if (!booking) return booking;
+    const resourceId = booking.resourceId ?? booking.resource_id ?? null;
+    const employeeId = booking.employeeId ?? booking.employee_id ?? null;
     return {
         id: booking.id,
-        resourceId: booking.resourceId ?? booking.resource_id ?? null,
-        employeeId: booking.employeeId ?? booking.employee_id ?? null,
+        resourceId,
+        assetId: resourceId,
+        assetName: booking.assetName ?? booking.asset_name ?? null,
+        employeeId,
+        bookedBy: employeeId,
+        bookedByName: booking.bookedByName ?? booking.booked_by_name ?? null,
         date: booking.date ?? null,
         startTime: booking.startTime ?? booking.start_time ?? null,
         endTime: booking.endTime ?? booking.end_time ?? null,
+        notes: booking.notes ?? null,
         status: booking.status ?? "Upcoming"
     };
 }
 
 function normalizeMaintenance(ticket) {
     if (!ticket) return ticket;
+    const reportedDate = ticket.reportedDate ?? ticket.reported_date ?? ticket.createdAt ?? ticket.created_at ?? null;
     return {
         id: ticket.id,
         assetId: ticket.assetId ?? ticket.asset_id ?? null,
+        assetName: ticket.assetName ?? ticket.asset_name ?? null,
         issueDescription: ticket.issueDescription ?? ticket.issue_description ?? "",
         priority: ticket.priority ?? "Medium",
         employeeId: ticket.employeeId ?? ticket.employee_id ?? null,
+        reportedBy: ticket.reportedBy ?? ticket.employeeId ?? ticket.employee_id ?? null,
+        reportedByName: ticket.reportedByName ?? ticket.reported_by_name ?? null,
+        reportedDate,
+        dateRaised: reportedDate,
         status: ticket.status ?? "Pending",
-        technician: ticket.technician ?? null,
-        notes: ticket.notes ?? null,
+        technician: ticket.technician ?? ticket.technicianName ?? ticket.technician_name ?? null,
+        technicianId: ticket.technicianId ?? ticket.technician_id ?? null,
+        technicianName: ticket.technicianName ?? ticket.technician_name ?? ticket.technician ?? null,
+        notes: ticket.notes ?? [],
+        resolvedDate: ticket.resolvedDate ?? ticket.resolved_date ?? null,
         createdAt: ticket.createdAt ?? ticket.created_at ?? null
+    };
+}
+
+function normalizeAuditItem(item) {
+    if (!item) return item;
+    return {
+        assetId: item.assetId ?? item.asset_id ?? null,
+        expectedHolder: item.expectedHolder ?? item.expected_holder ?? null,
+        status: item.status ?? "Pending",
+        verifiedBy: item.verifiedBy ?? item.verified_by ?? null,
+        verifiedDate: item.verifiedDate ?? item.verified_date ?? null,
+        notes: item.notes ?? null
     };
 }
 
 function normalizeAudit(audit) {
     if (!audit) return audit;
+    const rawStatus = audit.status ?? "Open";
+    const items = (audit.items ?? audit.checklist ?? []).map(normalizeAuditItem);
+    const createdAt = audit.createdAt ?? audit.created_at ?? audit.startDate ?? null;
     return {
         id: audit.id,
         name: audit.name ?? "",
         scopeType: audit.scopeType ?? audit.scope_type ?? "",
         scopeValue: audit.scopeValue ?? audit.scope_value ?? "",
+        scope: audit.scope ?? audit.scopeValue ?? audit.scope_value ?? "All assets",
         auditorIds: audit.auditorIds ?? audit.auditor_ids ?? [],
-        status: audit.status ?? "Open",
-        createdAt: audit.createdAt ?? audit.created_at ?? null,
-        items: audit.items ?? []
+        status: rawStatus === "Open" ? "Active" : rawStatus,
+        createdAt,
+        startDate: audit.startDate ?? createdAt,
+        endDate: audit.endDate ?? audit.end_date ?? null,
+        createdBy: audit.createdBy ?? audit.created_by ?? null,
+        items,
+        checklist: items
+    };
+}
+
+function normalizeTransfer(transfer) {
+    if (!transfer) return transfer;
+    return {
+        id: transfer.id,
+        assetId: transfer.assetId ?? transfer.asset_id ?? null,
+        assetName: transfer.assetName ?? transfer.asset_name ?? null,
+        fromId: transfer.fromId ?? transfer.from_id ?? null,
+        fromName: transfer.fromName ?? transfer.from_name ?? null,
+        toId: transfer.toId ?? transfer.to_id ?? null,
+        toName: transfer.toName ?? transfer.to_name ?? null,
+        reason: transfer.reason ?? null,
+        date: transfer.date ?? null,
+        status: transfer.status ?? "Pending"
     };
 }
 
@@ -410,7 +476,8 @@ function bootstrapLocalData() {
         [STORAGE_KEYS.maintenance]: DEFAULT_DATA.maintenance,
         [STORAGE_KEYS.audits]: DEFAULT_DATA.audits,
         [STORAGE_KEYS.logs]: DEFAULT_DATA.logs,
-        [STORAGE_KEYS.notifications]: DEFAULT_DATA.notifications
+        [STORAGE_KEYS.notifications]: DEFAULT_DATA.notifications,
+        [STORAGE_KEYS.transfers]: DEFAULT_DATA.transfers
     };
 
     Object.entries(seedMap).forEach(([key, value]) => {
@@ -611,52 +678,112 @@ export const Store = {
 
     async fetchEmployees() {
         const res = await apiCall("/employees");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeEmployee) : this.getEmployees();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeEmployee);
+            writeList(STORAGE_KEYS.employees, normalized);
+            return normalized;
+        }
+        return this.getEmployees();
     },
 
     async fetchDepartments() {
         const res = await apiCall("/departments");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeDepartment) : this.getDepartments();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeDepartment);
+            writeList(STORAGE_KEYS.departments, normalized);
+            return normalized;
+        }
+        return this.getDepartments();
     },
 
     async fetchCategories() {
         const res = await apiCall("/categories");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeCategory) : this.getCategories();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeCategory);
+            writeList(STORAGE_KEYS.categories, normalized);
+            return normalized;
+        }
+        return this.getCategories();
     },
 
     async fetchAssets() {
         const res = await apiCall("/assets");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeAsset) : this.getAssets();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeAsset);
+            writeList(STORAGE_KEYS.assets, normalized);
+            return normalized;
+        }
+        return this.getAssets();
     },
 
     async fetchAllocations() {
         const res = await apiCall("/allocations");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeAllocation) : this.getAllocations();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeAllocation);
+            writeList(STORAGE_KEYS.allocations, normalized);
+            return normalized;
+        }
+        return this.getAllocations();
     },
 
     async fetchTransfers() {
         const res = await apiCall("/transfers");
-        return res.success ? res.data : [];
+        if (res.success && Array.isArray(res.data)) {
+            const normalized = res.data.map(normalizeTransfer);
+            writeList(STORAGE_KEYS.transfers, normalized);
+            return normalized;
+        }
+        return this.getTransfers();
+    },
+
+    getTransfers() {
+        return safeParseList(localStorage.getItem(STORAGE_KEYS.transfers), DEFAULT_DATA.transfers).map(normalizeTransfer);
+    },
+
+    async saveTransfers(list) {
+        const normalized = list.map(normalizeTransfer);
+        writeList(STORAGE_KEYS.transfers, normalized);
+        await apiCall("/transfers", "PUT", normalized.map(toTransferPayload));
     },
 
     async fetchBookings() {
         const res = await apiCall("/bookings");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeBooking) : this.getBookings();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeBooking);
+            writeList(STORAGE_KEYS.bookings, normalized);
+            return normalized;
+        }
+        return this.getBookings();
     },
 
     async fetchMaintenance() {
         const res = await apiCall("/maintenance");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeMaintenance) : this.getMaintenance();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeMaintenance);
+            writeList(STORAGE_KEYS.maintenance, normalized);
+            return normalized;
+        }
+        return this.getMaintenance();
     },
 
     async fetchAudits() {
         const res = await apiCall("/audits");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeAudit) : this.getAudits();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeAudit);
+            writeList(STORAGE_KEYS.audits, normalized);
+            return normalized;
+        }
+        return this.getAudits();
     },
 
     async fetchLogs() {
         const res = await apiCall("/logs");
-        return res.success && Array.isArray(res.data) && res.data.length > 0 ? res.data.map(normalizeLog) : this.getLogs();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            const normalized = res.data.map(normalizeLog);
+            writeList(STORAGE_KEYS.logs, normalized);
+            return normalized;
+        }
+        return this.getLogs();
     },
 
     async fetchNotifications(userId) {
@@ -670,6 +797,47 @@ export const Store = {
 
     async getActivity() {
         return this.fetchLogs();
+    },
+
+    getActivitySync() {
+        return this.getLogs();
+    },
+
+    async createAsset(payload) {
+        const res = await apiCall("/assets", "POST", {
+            name: payload.name,
+            category_id: payload.categoryId ?? payload.category_id,
+            serial_number: payload.serialNumber ?? payload.serial_number,
+            location: payload.location,
+            is_shared: payload.isShared ?? payload.is_shared ?? false,
+            bookable: payload.bookable ?? payload.isShared ?? false,
+            acquisition_date: payload.acquisitionDate ?? payload.acquisition_date ?? null,
+            acquisition_cost: payload.acquisitionCost ?? payload.acquisition_cost ?? 0
+        });
+        if (res.success) {
+            const asset = normalizeAsset(res.data);
+            const assets = this.getAssets();
+            if (!assets.some(item => item.id === asset.id)) {
+                this.saveAssets([asset, ...assets]);
+            }
+            return { success: true, data: asset };
+        }
+        return res;
+    },
+
+    async refreshFromApi() {
+        const [assets, allocations, bookings, maintenance, audits, transfers, departments, employees, categories] = await Promise.all([
+            this.fetchAssets(),
+            this.fetchAllocations(),
+            this.fetchBookings(),
+            this.fetchMaintenance(),
+            this.fetchAudits(),
+            this.fetchTransfers(),
+            this.fetchDepartments(),
+            this.fetchEmployees(),
+            this.fetchCategories()
+        ]);
+        return { assets, allocations, bookings, maintenance, audits, transfers, departments, employees, categories };
     },
 
     async logActivity(user, action, details) {
@@ -728,11 +896,12 @@ export const Store = {
         });
     },
 
-    async requestTransfer(assetId, targetEmployeeId, actionUser) {
+    async requestTransfer(assetId, targetEmployeeId, actionUser, reason = null) {
         return apiCall("/transfers/request", "POST", {
             asset_id: assetId,
             target_employee_id: targetEmployeeId,
-            action_user: actionUser
+            action_user: actionUser,
+            reason
         });
     },
 

@@ -158,6 +158,27 @@
                     <!-- Screen HTML will be injected here by app.js -->
                 </main>
             </div>
+
+            <!-- Demo Role Switcher -->
+            <div class="role-switcher-panel collapsed" id="role-switcher-panel">
+                <div class="switcher-header">
+                    <span><i data-lucide="flask-conical"></i> Demo Role Switcher</span>
+                    <button class="btn-icon-sm" id="toggle-switcher-btn"><i data-lucide="chevron-up"></i></button>
+                </div>
+                <div class="switcher-body">
+                    <p class="switcher-description">Quickly preview the app as different roles during testing.</p>
+                    <div class="switcher-buttons">
+                        <button class="btn-switcher" data-role="Admin">Admin</button>
+                        <button class="btn-switcher" data-role="Asset Manager">Asset Manager</button>
+                        <button class="btn-switcher" data-role="Department Head">Dept Head</button>
+                        <button class="btn-switcher" data-role="Employee">Employee</button>
+                    </div>
+                    <div class="switcher-status">
+                        <span>Active role</span>
+                        <strong id="switcher-active-role">—</strong>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Details Drawer / Slide-over (Used for viewing asset history details, booking details, etc.) -->

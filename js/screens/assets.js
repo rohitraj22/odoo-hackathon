@@ -5,13 +5,11 @@
 import { Store } from "../store.js";
 import { openDrawer, openModal, showToast } from "../app.js";
 
-// Local state to allow instant search filtering without spamming the API
 let pageAssets = [];
 let pageCategories = [];
 let pageDepts = [];
 
 export async function renderAssets(container, user) {
-    // 1. Show Loading State
     container.innerHTML = `
         <div style="display:flex; justify-content:center; align-items:center; height: 60vh; flex-direction:column; gap:16px;">
             <i data-lucide="loader-2" style="width:40px; height:40px; color:var(--color-primary); animation: spin 1s linear infinite;"></i>
@@ -21,38 +19,46 @@ export async function renderAssets(container, user) {
     `;
     lucide.createIcons();
 
-    // 2. Fetch Data from FastAPI Backend
     [pageAssets, pageCategories, pageDepts] = await Promise.all([
         Store.fetchAssets(),
         Store.fetchCategories(),
         Store.fetchDepartments()
     ]);
 
-    // 3. Render the UI Shell
     container.innerHTML = `
-        <div class="assets-view-wrapper">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap;">
-                <div class="search-input-wrapper" style="flex:1; min-width:200px; position:relative;">
-                    <i data-lucide="search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--color-gray-400);"></i>
-                    <input type="text" id="asset-search" class="form-control" placeholder="Search by tag, serial, or name..." style="padding-left:36px;">
+        <div class="assets-view-wrapper page-shell">
+            <div class="page-hero">
+                <div>
+                    <p class="page-eyebrow">Central directory</p>
+                    <h2 class="page-title">Asset Registration & Tracking</h2>
+                    <p class="page-subtitle">Search, filter, and manage assets across their full lifecycle.</p>
                 </div>
-                <select id="filter-category" class="form-control" style="width:auto; min-width:130px;">
+                ${(user.role === "Admin" || user.role === "Asset Manager") ? `
+                    <button class="btn btn-primary" id="trigger-register-btn">
+                        <i data-lucide="plus"></i> Register Asset
+                    </button>
+                ` : ""}
+            </div>
+
+            <div class="filter-bar">
+                <div class="search-input-wrapper">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="asset-search" class="form-control" placeholder="Search by tag, serial, or name...">
+                </div>
+                <select id="filter-category" class="form-control filter-select">
                     <option value="">All Categories</option>
                     ${pageCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join("")}
                 </select>
-                <select id="filter-status" class="form-control" style="width:auto; min-width:130px;">
+                <select id="filter-status" class="form-control filter-select">
                     <option value="">All Statuses</option>
                     <option value="Available">Available</option>
                     <option value="Allocated">Allocated</option>
-                    <option value="Under Maintenance">Maintenance</option>
+                    <option value="Reserved">Reserved</option>
+                    <option value="Under Maintenance">Under Maintenance</option>
                     <option value="Lost">Lost</option>
                     <option value="Retired">Retired</option>
+                    <option value="Disposed">Disposed</option>
                 </select>
-                ${(user.role === 'Admin' || user.role === 'Asset Manager') ? `
-                    <button class="btn" id="trigger-register-btn" style="border:2px solid var(--color-gray-900); background-color:#e2f2e9; color:#065f46; font-weight:700; white-space:nowrap; padding:10px 16px;">
-                        + Register asset
-                    </button>
-                ` : ''}
             </div>
 
             <div class="table-responsive">
@@ -67,28 +73,42 @@ export async function renderAssets(container, user) {
                             <th style="text-align:right;">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="assets-table-body">
-                    </tbody>
+                    <tbody id="assets-table-body"></tbody>
                 </table>
             </div>
         </div>
     `;
 
-    // 4. Initial Render & Event Listeners
     filterAssets();
-    
+
     container.querySelector("#asset-search").addEventListener("input", filterAssets);
     container.querySelector("#filter-category").addEventListener("change", filterAssets);
     container.querySelector("#filter-status").addEventListener("change", filterAssets);
 
-    if (user.role === 'Admin' || user.role === 'Asset Manager') {
-        container.querySelector("#trigger-register-btn").addEventListener("click", () => openRegisterModal(user));
+    const registerBtn = container.querySelector("#trigger-register-btn");
+    if (registerBtn) {
+        registerBtn.addEventListener("click", () => openRegisterModal(user));
     }
 
     container.querySelector("#assets-table-body").addEventListener("click", e => {
         const btn = e.target.closest(".view-asset-btn");
         if (btn) openAssetDrawer(btn.dataset.id);
     });
+
+    lucide.createIcons();
+}
+
+function statusBadgeClass(status) {
+    const map = {
+        Available: "badge-available",
+        Allocated: "badge-allocated",
+        Reserved: "badge-reserved",
+        "Under Maintenance": "badge-undermaintenance",
+        Lost: "badge-lost",
+        Retired: "badge-retired",
+        Disposed: "badge-disposed"
+    };
+    return map[status] || "badge-retired";
 }
 
 function filterAssets() {
@@ -97,8 +117,11 @@ function filterAssets() {
     const status = document.getElementById("filter-status")?.value || "";
 
     const filtered = pageAssets.filter(a => {
-        const matchQ = !query || a.name.toLowerCase().includes(query) || a.id.toLowerCase().includes(query) || (a.serial_number || "").toLowerCase().includes(query);
-        const matchC = !catId || a.category_id === catId;
+        const matchQ = !query ||
+            a.name.toLowerCase().includes(query) ||
+            a.id.toLowerCase().includes(query) ||
+            (a.serialNumber || "").toLowerCase().includes(query);
+        const matchC = !catId || a.categoryId === catId;
         const matchS = !status || a.status === status;
         return matchQ && matchC && matchS;
     });
@@ -107,25 +130,20 @@ function filterAssets() {
     if (!tbody) return;
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--color-gray-400); padding:32px;">No assets found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i data-lucide="package-search"></i><p>No assets match your filters.</p></div></td></tr>`;
+        lucide.createIcons();
         return;
     }
 
     tbody.innerHTML = filtered.map(a => {
-        const cat = pageCategories.find(c => c.id === a.category_id);
-        let badgeClass = "badge-retired";
-        if (a.status === "Available") badgeClass = "badge-available";
-        else if (a.status === "Allocated") badgeClass = "badge-allocated";
-        else if (a.status === "Under Maintenance") badgeClass = "badge-undermaintenance";
-        else if (a.status === "Lost") badgeClass = "badge-lost";
-
+        const cat = pageCategories.find(c => c.id === a.categoryId);
         return `
             <tr>
-                <td style="font-weight:700; font-family:monospace; font-size:0.85rem;">${a.id}</td>
+                <td><span class="asset-tag-chip">${a.id}</span></td>
                 <td style="font-weight:600;">${a.name}</td>
-                <td>${cat ? cat.name : '—'}</td>
-                <td><span class="badge ${badgeClass}">${a.status}</span></td>
-                <td>${a.location || '—'}</td>
+                <td>${cat ? cat.name : "—"}</td>
+                <td><span class="badge ${statusBadgeClass(a.status)}">${a.status}</span></td>
+                <td>${a.location || "—"}</td>
                 <td style="text-align:right;">
                     <button class="btn btn-secondary btn-sm view-asset-btn" data-id="${a.id}">View Details</button>
                 </td>
@@ -161,9 +179,9 @@ function openRegisterModal(user) {
                 <input type="text" id="reg-location" class="form-control" placeholder="e.g. Server Room" required>
             </div>
         </div>
-        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="reg-shared" style="width:16px; height:16px;">
-            <label for="reg-shared" style="margin-bottom:0; cursor:pointer;">Shared / Bookable resource</label>
+        <div class="form-group checkbox-row">
+            <input type="checkbox" id="reg-shared">
+            <label for="reg-shared">Shared / Bookable resource</label>
         </div>
     `;
 
@@ -179,39 +197,30 @@ function openRegisterModal(user) {
             return false;
         }
 
-        // Disable button while saving to prevent double-clicks
-        document.getElementById("modal-confirm-btn-action").disabled = true;
-        document.getElementById("modal-confirm-btn-action").textContent = "Saving...";
+        const confirmBtn = document.getElementById("modal-confirm-btn-action");
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Saving...";
 
-        try {
-            const response = await fetch("http://localhost:8000/api/assets", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: name,
-                    category_id: catId,
-                    serial_number: serial,
-                    location: location,
-                    is_shared: isShared
-                })
-            });
+        const result = await Store.createAsset({
+            name,
+            categoryId: catId,
+            serialNumber: serial,
+            location,
+            isShared,
+            bookable: isShared
+        });
 
-            if (!response.ok) throw new Error("Failed to register asset");
-
-            showToast(`Asset "${name}" registered successfully.`, "success");
-            
-            // Re-render the screen to show the new data
-            const viewport = document.getElementById("content-viewport");
-            await renderAssets(viewport, user);
-            
-            return true; 
-        } catch (error) {
-            console.error(error);
-            showToast("Error communicating with server.", "danger");
-            document.getElementById("modal-confirm-btn-action").disabled = false;
-            document.getElementById("modal-confirm-btn-action").textContent = "Register";
+        if (!result.success) {
+            showToast(result.message || "Failed to register asset.", "danger");
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Register";
             return false;
         }
+
+        await Store.logActivity(user.name, "Asset Registered", `${name} (${result.data.id}) added to directory.`);
+        showToast(`Asset "${name}" registered as ${result.data.id}.`, "success");
+        await renderAssets(document.getElementById("content-viewport"), user);
+        return true;
     }, "Register");
 }
 
@@ -219,28 +228,40 @@ function openAssetDrawer(assetId) {
     const a = pageAssets.find(x => x.id === assetId);
     if (!a) return;
 
-    const cat = pageCategories.find(c => c.id === a.category_id);
-
-    let badgeClass = "badge-retired";
-    if (a.status === "Available") badgeClass = "badge-available";
-    else if (a.status === "Allocated") badgeClass = "badge-allocated";
-    else if (a.status === "Under Maintenance") badgeClass = "badge-undermaintenance";
-    else if (a.status === "Lost") badgeClass = "badge-lost";
+    const cat = pageCategories.find(c => c.id === a.categoryId);
+    const history = (a.history || []).slice(-5).reverse();
 
     const html = `
-        <div style="padding-bottom:16px; border-bottom:1px solid var(--color-gray-200); margin-bottom:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span class="badge ${badgeClass}">${a.status}</span>
-                <span style="font-family:monospace; font-size:0.8rem; color:var(--color-gray-500);">${a.id}</span>
-            </div>
-            <h2 style="font-size:1.4rem; font-weight:800; margin-bottom:4px;">${a.name}</h2>
-            <div style="font-size:0.875rem; color:var(--color-gray-500);">${a.location || '—'} · ${cat ? cat.name : '—'}</div>
+        <div class="drawer-asset-header">
+            <span class="badge ${statusBadgeClass(a.status)}">${a.status}</span>
+            <span class="asset-tag-chip">${a.id}</span>
+        </div>
+        <h2 class="drawer-asset-title">${a.name}</h2>
+        <p class="drawer-asset-meta">${a.location || "—"} · ${cat ? cat.name : "—"}</p>
+
+        <div class="detail-grid">
+            <div><span>Serial</span><strong>${a.serialNumber || "—"}</strong></div>
+            <div><span>Condition</span><strong>${a.condition}</strong></div>
+            <div><span>Holder</span><strong>${a.currentHolderName || "—"}</strong></div>
+            <div><span>Shared</span><strong>${a.isShared ? "Yes" : "No"}</strong></div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.85rem; background-color:var(--color-gray-50); padding:14px; border-radius:var(--radius-md); margin-bottom:20px;">
-            <div>Serial: <strong style="font-family:monospace;">${a.serial_number || '—'}</strong></div>
-            <div>Condition: <strong>${a.condition}</strong></div>
-            <div style="grid-column:span 2">Shared Resource: <strong>${a.is_shared ? 'Yes' : 'No'}</strong></div>
+        <div class="drawer-section">
+            <h4>Recent History</h4>
+            ${history.length ? `
+                <div class="timeline-list">
+                    ${history.map(h => `
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div>
+                                <strong>${h.action}</strong>
+                                <p>${h.details || ""}</p>
+                                <small>${h.date} · ${h.user || "System"}</small>
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            ` : `<p class="muted-text">No history recorded yet.</p>`}
         </div>
     `;
 

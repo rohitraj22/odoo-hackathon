@@ -54,6 +54,7 @@ export async function checkAuthAndRoute() {
         mainShell.classList.remove("hidden");
         
         const currentUser = Store.getCurrentUser();
+        await Store.refreshFromApi();
         await updateUIForUser(currentUser); 
         
         const hash = window.location.hash.replace("#", "") || "dashboard";
