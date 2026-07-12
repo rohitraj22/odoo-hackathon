@@ -1,84 +1,172 @@
-# AssetFlow - Enterprise Asset & Resource Management System
+# AssetFlow — Enterprise Asset & Resource Management
 
-AssetFlow is a centralized, role-based ERP platform designed to simplify how organizations track, allocate, and maintain their physical assets and shared resources. It eliminates manual tracking inefficiencies by digitizing asset lifecycles, resource bookings, and maintenance workflows into an intuitive, responsive interface.
-
----
-
-## 🚀 Key Features
-
-### 1. 🔐 Upgraded Login & Signup Experience
-* **Split-Screen Layout**: A desktop-optimized design featuring a brand panel with glassmorphic elements and key features list, collapsing to a single-pane form layout on mobile.
-* **Password Visibility Toggles**: Interactive toggle buttons for all password fields (Login, Signup, and Reset).
-* **Password Strength Checker**: Real-time password feedback (minimum length, capital letter, digit checklist) that dynamically enables/disables sign-up completion.
-* **Simulated Password Recovery**: A fully functional multi-step forgot password flow:
-  1. **Request**: Look up registered email addresses.
-  2. **OTP Verification**: Enter code `123456` (simulation).
-  3. **Reset**: Set and confirm a new password.
-  4. **Persist**: Directly updates the user’s credentials in the local database.
-
-### 2. 📊 Real-Time Operations Dashboard
-* **KPI Metrics**: Dynamic cards for Assets Available, Assets Allocated, Active Bookings, and Overdue Returns.
-* **Alert System**: Overdue expected return dates are flagged and highlighted in warning/danger logs.
-* **Quick Actions**: Instant access to Register Asset, Book Resource, and Raise Maintenance Request based on roles.
-
-### 3. 🏢 Organization Setup (Admin-Only)
-* **Department Management**: Create, edit, and deactivate departments with hierarchy (parent/child relationships).
-* **Asset Categories**: Set custom fields per category (e.g. warranty period for Electronics, material for Furniture).
-* **Employee Directory**: Manage roles (Admin, Asset Manager, Department Head, Employee) and statuses.
-
-### 4. 📁 Central Asset Directory
-* **Registration**: Auto-generated asset tags (e.g. `AF-0001`), location tracking, acquisition logs, and bookable configuration.
-* **Lifecycle Transitions**: Tracks assets through Available, Allocated, Under Maintenance, Lost, and Retired states.
-* **Audit Trail**: Direct per-asset history of allocation and maintenance events.
-
-### 5. 🔄 Conflict-Free Allocations & P2P Transfers
-* **Double-Allocation Prevention**: System blocks allocating already-taken assets.
-* **Transfer Requests**: Offers a "Request Transfer" action if an asset is occupied, sending a request to the current holder's manager.
-* **Check-In Return Flow**: Enter notes and check condition on return, reverting status back to Available.
-
-### 6. 📅 Smart Resource Bookings
-* **Overlap Check**: Strict calendar-based time slot check to prevent double bookings of rooms/equipment.
-* **Booking Status**: Track Upcoming, Ongoing, and Completed reservations.
-
-### 7. 🔧 Maintenance Workflows
-* **Ticket Lifecycle**: Pending Request ➔ Approved ➔ In Progress (Technician Assigned) ➔ Resolved.
-* **Asset Automation**: Auto-updates asset status to *Under Maintenance* upon approval, reverting to *Available* on resolution.
+AssetFlow is a full-stack, role-based asset management platform built for organizations that need to track, allocate, and maintain physical assets and shared resources. It replaces spreadsheet-based tracking with a structured, conflict-safe system covering the full asset lifecycle — from registration through retirement.
 
 ---
 
-## 🛠️ Architecture & Database
+## 🛠️ Tech Stack
 
-AssetFlow is built with a zero-dependency front-end architecture:
-* **Frontend**: HTML5, Vanilla ES Modules JS, CSS3 Design Tokens.
-* **Mock Database**: Browser **`localStorage`** (implemented in `js/store.js`). This allows:
-  * **Zero Setup**: Immediate use in any browser sandbox.
-  * **Data Persistence**: Data persists across page reloads and browser sessions.
-  * **Interactive Testing**: Role changes update data instantly.
-
----
-
-## 🚀 How to Run the Project
-
-Since the project uses ES Modules, it requires a local web server to avoid CORS policy blockages when loading script imports.
-
-### Option A: Using Python (Recommended)
-1. Open terminal inside the `odoo-hackathon` folder.
-2. Run the command:
-   ```bash
-   python -m http.server 8000
-   ```
-3. Open your browser and navigate to **`http://localhost:8000`**.
-
-### Option B: Using Node.js
-1. Open terminal inside the `odoo-hackathon` folder.
-2. Run the command:
-   ```bash
-   npx serve -l 8000
-   ```
-3. Open your browser and navigate to **`http://localhost:8000`**.
+| Layer | Technology |
+|---|---|
+| Frontend | HTML5, Vanilla JS (ES Modules), CSS3 |
+| Backend | Python · FastAPI · SQLAlchemy |
+| Database | SQLite (via `assetflow.db`) |
+| Auth | JWT (pbkdf2_sha256 password hashing, Bearer tokens) |
+| Icons | Lucide Icons CDN |
+| Charts | Chart.js |
 
 ---
 
-## 🔑 Starter Access
+## 🚀 How to Run
 
-The workspace includes local starter accounts and seed data for testing the full flow without any manual setup. You can create additional employee accounts directly from the login screen, and the data will persist in the browser.
+### 1. Start the Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+The API will be available at `http://localhost:8000`. The database is auto-seeded with departments, employees, and sample assets on first run.
+
+### 2. Serve the Frontend
+
+Open a second terminal in the project root and run:
+
+```bash
+# Python
+python -m http.server 8080
+
+# or Node
+npx serve -l 8080
+```
+
+Then open **`http://localhost:8080`** in your browser.
+
+> The frontend uses ES Modules and requires a local server — opening `index.html` directly will not work.
+
+---
+
+## 🔑 Demo Accounts
+
+All demo accounts use the password **`password`**.
+
+| Role | Email |
+|---|---|
+| Admin | admin@assetflow.com |
+| Asset Manager | manager@assetflow.com |
+| Department Head | head@assetflow.com |
+| Employee | employee@assetflow.com |
+
+New accounts created via the Signup screen are always assigned the **Employee** role. An Admin can promote users to higher roles from the Organization Setup screen.
+
+---
+
+## ✨ Features
+
+### Authentication
+- Email + password login with JWT session tokens
+- Signup creates an **Employee** account only — no self-elevation
+- Admins assign Department Head and Asset Manager roles from the Employee Directory
+- Forgot password flow: email lookup → OTP verification → password reset
+- Real-time password strength meter (length, number, uppercase checks)
+
+### Dashboard
+- Live KPI cards: Available assets, Allocations, Maintenance, Bookings, Transfers, Upcoming Returns
+- Overdue return alerts with highlighted table
+- Quick actions: Register Asset, Book Resource, Raise Maintenance (role-gated)
+- Recent activity feed pulled from audit logs
+
+### Organization Setup *(Admin only)*
+- Department hierarchy management (parent/child relationships)
+- Asset category builder with custom field definitions (e.g. Warranty for IT, Material for Furniture)
+- Employee directory with role and status management
+
+### Asset Directory
+- Auto-generated asset tags (`AF-XXXX`)
+- Full lifecycle tracking: Available → Allocated → Under Maintenance → Retired
+- Search and filter by name, tag, category, and status
+- Per-asset history drawer showing all allocation and maintenance events
+
+### Allocations & Transfers
+- Double-allocation prevention — blocked at both API and UI level
+- Transfer requests when an asset is already held by another employee
+- Manager approval workflow for transfers
+- Return flow with condition-on-return and notes
+
+### Resource Bookings
+- Calendar-based timeline scheduler per bookable resource
+- Strict overlap detection prevents double bookings
+- Booking status tracking: Upcoming, Ongoing, Cancelled
+
+### Maintenance
+- Kanban board across five stages: Pending → Approved → Technician Assigned → In Progress → Resolved
+- Priority levels: Low, Medium, High, Critical
+- Auto-sets asset status to *Under Maintenance* on approval, reverts to *Available* on resolution
+
+### Audit & Verification
+- Audit cycle creation scoped to department or all assets
+- Per-asset checklist: Verified / Missing / Damaged
+- Progress bar and discrepancy banner
+- Closed audits archived with full result summary
+
+### Reports & Analytics
+- Department asset utilization bar charts
+- Maintenance frequency ranking by asset
+- Idle asset identification
+- Near-retirement asset flagging (3+ years since acquisition)
+
+### Notifications
+- In-app notification feed with category tabs (All, Alerts, Approvals, Bookings)
+- Bell icon badge with unread count
+- Notification dropdown in the header with per-type color coding
+
+---
+
+## 📁 Project Structure
+
+```
+odoo-hackathon/
+├── backend/
+│   ├── main.py          # FastAPI entry point
+│   ├── api.py           # All route definitions
+│   ├── models.py        # SQLAlchemy ORM models
+│   ├── schemas.py       # Pydantic request/response schemas
+│   ├── auth.py          # Password hashing & JWT creation
+│   ├── config.py        # Environment settings (.env)
+│   ├── database.py      # DB engine & session setup
+│   ├── seed.py          # Initial data seeder
+│   └── requirements.txt
+├── css/
+│   └── style.css        # Full design system & component styles
+├── js/
+│   ├── app.js           # Router, auth guard, shell events
+│   ├── store.js         # API client & local-first data layer
+│   └── screens/
+│       ├── login.js
+│       ├── dashboard.js
+│       ├── assets.js
+│       ├── allocations.js
+│       ├── bookings.js
+│       ├── maintenance.js
+│       ├── audits.js
+│       ├── reports.js
+│       ├── logs.js
+│       └── setup.js
+└── index.html           # App shell (sidebar, header, modals)
+```
+
+---
+
+## 🔒 Role Permissions Summary
+
+| Feature | Employee | Dept Head | Asset Manager | Admin |
+|---|:---:|:---:|:---:|:---:|
+| View Dashboard | ✅ | ✅ | ✅ | ✅ |
+| Register Assets | ❌ | ❌ | ✅ | ✅ |
+| Allocate / Return | ❌ | ❌ | ✅ | ✅ |
+| Approve Transfers | ❌ | ❌ | ✅ | ✅ |
+| Approve Maintenance | ❌ | ❌ | ✅ | ✅ |
+| Start Audit Cycle | ❌ | ❌ | ✅ | ✅ |
+| Organization Setup | ❌ | ❌ | ❌ | ✅ |
+| Manage Employees | ❌ | ❌ | ❌ | ✅ |
