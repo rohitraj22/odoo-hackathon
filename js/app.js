@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
     setupGlobalDOMEvents();
-    setupRoleSwitcher();
     checkAuthAndRoute();
 }
 
@@ -340,56 +339,4 @@ export function showToast(message, type = "success") {
     }, 4000);
 }
 
-// 7. Role Switcher (Async Updated)
-function setupRoleSwitcher() {
-    const toggleBtn = document.getElementById("toggle-switcher-btn");
-    const panel = document.getElementById("role-switcher-panel");
 
-    if (!toggleBtn || !panel) {
-        return;
-    }
-
-    toggleBtn.addEventListener("click", () => {
-        panel.classList.toggle("collapsed");
-        const isCollapsed = panel.classList.contains("collapsed");
-        toggleBtn.innerHTML = `<i data-lucide="${isCollapsed ? 'chevron-up' : 'chevron-down'}"></i>`;
-        lucide.createIcons();
-    });
-
-    const switcherBtns = document.querySelectorAll(".btn-switcher");
-    switcherBtns.forEach(btn => {
-        btn.addEventListener("click", async () => {
-            const role = btn.dataset.role;
-            
-            // FETCH EMPLOYEES FROM BACKEND
-            const employees = await Store.fetchEmployees();
-            
-            const targetUser = employees.find(e => e.role === role);
-            if (!targetUser) {
-                showToast(`No mock user found for role: ${role}`, "warning");
-                return;
-            }
-
-            Store.setCurrentUser(targetUser);
-            
-            switcherBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            document.getElementById("switcher-active-role").textContent = role;
-
-            showToast(`Switched active workspace view to: ${targetUser.name} (${role})`, "info");
-            checkAuthAndRoute();
-        });
-    });
-
-    const activeUser = Store.getCurrentUser();
-    if (activeUser) {
-        switcherBtns.forEach(btn => {
-            if (btn.dataset.role === activeUser.role) {
-                btn.classList.add("active");
-                document.getElementById("switcher-active-role").textContent = activeUser.role;
-            } else {
-                btn.classList.remove("active");
-            }
-        });
-    }
-}
