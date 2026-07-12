@@ -1,93 +1,94 @@
 /* ===================================================
-   AssetFlow Central Store & State Management
+   AssetFlow Central Store & State Management (Wireframe Data Aligned)
    =================================================== */
 
-// Mock Data Definitions
+// Seeded Data matching the wireframe mockups
 const INITIAL_DEPARTMENTS = [
-    { id: "D-001", name: "Information Technology", parentId: "", headId: "EMP-002", headName: "Priya Sharma", status: "Active" },
-    { id: "D-002", name: "Human Resources", parentId: "", headId: "EMP-004", headName: "Sarah Jenkins", status: "Active" },
-    { id: "D-003", name: "Engineering", parentId: "D-001", headId: "EMP-003", headName: "Raj Patel", status: "Active" },
-    { id: "D-004", name: "Facilities & Operations", parentId: "", headId: "", headName: "Unassigned", status: "Active" }
+    { id: "D-001", name: "Engineering", parentId: "", headId: "EMP-003", headName: "aditi sen", status: "Active" },
+    { id: "D-002", name: "Facilities", parentId: "", headId: "EMP-004", headName: "rohan mehta", status: "Active" },
+    { id: "D-003", name: "Field ops (cust)", parentId: "Field Ops", headId: "", headName: "—", status: "Inactive" }
 ];
 
 const INITIAL_CATEGORIES = [
     { id: "CAT-001", name: "Electronics", customFields: [{ name: "Warranty Period (Months)", type: "number", value: "24" }, { name: "Brand", type: "text", value: "Apple" }] },
     { id: "CAT-002", name: "Furniture", customFields: [{ name: "Material", type: "text", value: "Wood" }] },
-    { id: "CAT-003", name: "Vehicles", customFields: [{ name: "License Plate", type: "text", value: "" }, { name: "Insurance Expiry", type: "date", value: "" }] },
-    { id: "CAT-004", name: "Office Equipment", customFields: [{ name: "Maintenance Interval (Days)", type: "number", value: "180" }] }
+    { id: "CAT-003", name: "Vehicles", customFields: [{ name: "License Plate", type: "text", value: "" }] }
 ];
 
 const INITIAL_EMPLOYEES = [
     { id: "EMP-001", name: "System Admin", email: "admin@assetflow.com", password: "password", departmentId: "D-001", role: "Admin", status: "Active" },
-    { id: "EMP-002", name: "Priya Sharma", email: "manager@assetflow.com", password: "password", departmentId: "D-001", role: "Asset Manager", status: "Active" },
-    { id: "EMP-003", name: "Raj Patel", email: "head@assetflow.com", password: "password", departmentId: "D-003", role: "Department Head", status: "Active" },
-    { id: "EMP-004", name: "Sarah Jenkins", email: "head-hr@assetflow.com", password: "password", departmentId: "D-002", role: "Department Head", status: "Active" },
-    { id: "EMP-005", name: "John Doe", email: "employee@assetflow.com", password: "password", departmentId: "D-003", role: "Employee", status: "Active" }
+    { id: "EMP-002", name: "Priya Shah", email: "manager@assetflow.com", password: "password", departmentId: "D-001", role: "Asset Manager", status: "Active" },
+    { id: "EMP-003", name: "Aditi Sen", email: "head@assetflow.com", password: "password", departmentId: "D-001", role: "Department Head", status: "Active" },
+    { id: "EMP-004", name: "Rohan Mehta", email: "head-facilities@assetflow.com", password: "password", departmentId: "D-002", role: "Department Head", status: "Active" },
+    { id: "EMP-005", name: "John Doe", email: "employee@assetflow.com", password: "password", departmentId: "D-001", role: "Employee", status: "Active" },
+    { id: "EMP-006", name: "Sarah Jenkins", email: "sarah@assetflow.com", password: "password", departmentId: "D-002", role: "Employee", status: "Active" }
 ];
 
 const INITIAL_ASSETS = [
-    { id: "AF-0001", name: "MacBook Pro 16\"", categoryId: "CAT-001", serialNumber: "MBP16-8924", acquisitionDate: "2025-01-10", acquisitionCost: 2500, condition: "Excellent", location: "Main Office - Floor 2", bookable: false, status: "Allocated", currentHolderId: "EMP-005", currentHolderName: "John Doe", isShared: false, customData: { "Warranty Period (Months)": "24", "Brand": "Apple" }, history: [
-        { date: "2025-01-10", action: "Registration", user: "Priya Sharma", details: "Asset registered in system." },
-        { date: "2026-06-01", action: "Allocation", user: "Priya Sharma", details: "Allocated to John Doe." }
+    { id: "AF-0114", name: "Dell laptop", categoryId: "CAT-001", serialNumber: "DL-0114", acquisitionDate: "2025-01-10", acquisitionCost: 1200, condition: "Good", location: "bengaluru", bookable: false, status: "Allocated", currentHolderId: "EMP-002", currentHolderName: "Priya Shah", isShared: false, customData: { "Brand": "Dell" }, history: [
+        { date: "2026-03-12", action: "Allocation", user: "Priya Shah", details: "Allocated to Priya Shah - Engineering" },
+        { date: "2026-01-04", action: "Return Checked-In", user: "Priya Shah", details: "Returned by Arjun Dev - condition good" }
     ]},
-    { id: "AF-0002", name: "Standing Desk", categoryId: "CAT-002", serialNumber: "SD-9011", acquisitionDate: "2025-03-15", acquisitionCost: 600, condition: "Good", location: "Main Office - Floor 2", bookable: false, status: "Available", currentHolderId: "", currentHolderName: "", isShared: false, customData: { "Material": "Oak/Steel" }, history: [
-        { date: "2025-03-15", action: "Registration", user: "Priya Sharma", details: "Desk registered." }
+    { id: "AF-0012", name: "Dell Laptop", categoryId: "CAT-001", serialNumber: "DL-0012", acquisitionDate: "2025-03-15", acquisitionCost: 1000, condition: "Excellent", location: "bengaluru", bookable: false, status: "Allocated", currentHolderId: "EMP-003", currentHolderName: "Aditi Sen", isShared: false, customData: { "Brand": "Dell" }, history: [
+        { date: "2025-03-15", action: "Registration", user: "Priya Shah", details: "Laptop registered." }
     ]},
-    { id: "AF-0003", name: "Conference Room B2", categoryId: "CAT-004", serialNumber: "CONF-B2", acquisitionDate: "2024-08-01", acquisitionCost: 0, condition: "Excellent", location: "Building B - Floor 1", bookable: true, status: "Available", currentHolderId: "", currentHolderName: "", isShared: true, customData: { "Maintenance Interval (Days)": "360" }, history: [
-        { date: "2024-08-01", action: "Registration", user: "System Admin", details: "Room configured as shared resource." }
+    { id: "AF-0062", name: "Projector", categoryId: "CAT-001", serialNumber: "PJ-0062", acquisitionDate: "2024-08-01", acquisitionCost: 800, condition: "Fair", location: "HQ floor 2", bookable: false, status: "Under Maintenance", currentHolderId: "", currentHolderName: "", isShared: false, customData: { "Brand": "Epson" }, history: [
+        { date: "2024-08-01", action: "Registration", user: "System Admin", details: "Projector configured." }
     ]},
-    { id: "AF-0004", name: "Toyota Prius (Fleet-03)", categoryId: "CAT-003", serialNumber: "TP-2023-A", acquisitionDate: "2024-11-20", acquisitionCost: 28000, condition: "Good", location: "Basement Parking", bookable: true, status: "Available", currentHolderId: "", currentHolderName: "", isShared: true, customData: { "License Plate": "987-XYZ", "Insurance Expiry": "2026-11-20" }, history: [
-        { date: "2024-11-20", action: "Registration", user: "Priya Sharma", details: "Fleet vehicle registered." }
+    { id: "AF-0201", name: "Office chair", categoryId: "CAT-002", serialNumber: "OC-0201", acquisitionDate: "2025-03-20", acquisitionCost: 200, condition: "Good", location: "Warehouse", bookable: false, status: "Available", currentHolderId: "", currentHolderName: "", isShared: false, customData: { "Material": "Fabric" }, history: [
+        { date: "2025-03-20", action: "Registration", user: "Priya Shah", details: "Office chair registered." }
     ]},
-    { id: "AF-0005", name: "iPhone 15 Pro", categoryId: "CAT-001", serialNumber: "IP15-7731", acquisitionDate: "2025-02-14", acquisitionCost: 1000, condition: "Fair", location: "IT Lab", bookable: false, status: "Under Maintenance", currentHolderId: "EMP-003", currentHolderName: "Raj Patel", isShared: false, customData: { "Warranty Period (Months)": "12", "Brand": "Apple" }, history: [
-        { date: "2025-02-14", action: "Registration", user: "Priya Sharma", details: "iPhone registered." },
-        { date: "2026-07-10", action: "Maintenance Raised", user: "Raj Patel", details: "Reported: Battery swelling." },
-        { date: "2026-07-11", action: "Status Change", user: "Priya Sharma", details: "Approved. Moved to Under Maintenance." }
-    ]},
-    { id: "AF-0006", name: "Ergonomic Office Chair", categoryId: "CAT-002", serialNumber: "EC-4022", acquisitionDate: "2025-03-20", acquisitionCost: 350, condition: "Excellent", location: "Main Office - Floor 2", bookable: false, status: "Allocated", currentHolderId: "EMP-004", currentHolderName: "Sarah Jenkins", isShared: false, customData: { "Material": "Mesh" }, history: [
-        { date: "2025-03-20", action: "Registration", user: "Priya Sharma", details: "Chair registered." },
-        { date: "2026-07-01", action: "Allocation", user: "Priya Sharma", details: "Allocated to Sarah Jenkins." }
-    ]}
+    { id: "AF-0003", name: "Conference Room B2", categoryId: "CAT-001", serialNumber: "ROOM-B2", acquisitionDate: "2024-01-01", acquisitionCost: 0, condition: "Excellent", location: "bengaluru", bookable: true, status: "Available", currentHolderId: "", currentHolderName: "", isShared: true, customData: {}, history: [] }
 ];
 
 const INITIAL_ALLOCATIONS = [
-    { id: "AL-001", assetId: "AF-0001", assetName: "MacBook Pro 16\"", employeeId: "EMP-005", employeeName: "John Doe", departmentId: "D-003", allocationDate: "2026-06-01", expectedReturnDate: "2026-07-01", actualReturnDate: "", status: "Active", conditionOnAllocation: "Excellent", returnNotes: "" },
-    { id: "AL-002", assetId: "AF-0006", assetName: "Ergonomic Office Chair", employeeId: "EMP-004", employeeName: "Sarah Jenkins", departmentId: "D-002", allocationDate: "2026-07-01", expectedReturnDate: "2026-08-01", actualReturnDate: "", status: "Active", conditionOnAllocation: "Excellent", returnNotes: "" }
+    { id: "AL-001", assetId: "AF-0114", assetName: "Dell laptop", holderId: "EMP-002", holderName: "Priya Shah", employeeId: "EMP-002", employeeName: "Priya Shah", department: "Engineering", departmentId: "D-001", date: "2026-03-12", allocationDate: "2026-03-12", expectedReturnDate: "2026-07-01", actualReturnDate: "", status: "Active", conditionOnAllocation: "Good", returnNotes: "" },
+    { id: "AL-002", assetId: "AF-0012", assetName: "Dell Laptop", holderId: "EMP-003", holderName: "Aditi Sen", employeeId: "EMP-003", employeeName: "Aditi Sen", department: "Engineering", departmentId: "D-001", date: "2026-06-01", allocationDate: "2026-06-01", expectedReturnDate: "2026-08-01", actualReturnDate: "", status: "Active", conditionOnAllocation: "Excellent", returnNotes: "" }
 ];
 
 const INITIAL_TRANSFERS = [];
 
 const INITIAL_BOOKINGS = [
-    { id: "BK-001", resourceId: "AF-0003", resourceName: "Conference Room B2", employeeId: "EMP-005", employeeName: "John Doe", date: "2026-07-12", startTime: "09:00", endTime: "10:00", status: "Completed" },
-    { id: "BK-002", resourceId: "AF-0003", resourceName: "Conference Room B2", employeeId: "EMP-004", employeeName: "Sarah Jenkins", date: "2026-07-12", startTime: "13:00", endTime: "14:30", status: "Upcoming" },
-    { id: "BK-003", resourceId: "AF-0004", resourceName: "Toyota Prius (Fleet-03)", employeeId: "EMP-003", employeeName: "Raj Patel", date: "2026-07-13", startTime: "10:00", endTime: "16:00", status: "Upcoming" }
+    { id: "BK-001", assetId: "AF-0003", assetName: "Conference Room B2", resourceId: "AF-0003", resourceName: "Conference Room B2", bookedBy: "EMP-005", bookedByName: "Procurement Team", employeeId: "EMP-005", employeeName: "Procurement Team", date: new Date().toISOString().split("T")[0], startTime: "09:00", endTime: "10:00", status: "Upcoming" }
 ];
 
 const INITIAL_MAINTENANCE = [
-    { id: "MT-001", assetId: "AF-0005", assetName: "iPhone 15 Pro", issueDescription: "Battery swelling, screen slightly lifting.", priority: "High", raisedBy: "EMP-003", raisedByName: "Raj Patel", dateRaised: "2026-07-10", status: "In Progress", technician: "David (In-house IT)", dateResolved: "", photoUrl: "", notes: "Battery replacement parts ordered." }
+    { id: "MT-001", assetId: "AF-0062", assetName: "Projector", issueDescription: "bulb not turning on", priority: "High", raisedBy: "EMP-003", raisedByName: "aditi sen", dateRaised: "2026-07-10", status: "Pending", technician: "", dateResolved: "", notes: "" },
+    { id: "MT-002", assetId: "AF-0211", assetName: "AC unit", issueDescription: "noisy compressor", priority: "Medium", raisedBy: "EMP-005", raisedByName: "John Doe", dateRaised: "2026-07-08", status: "Approved", technician: "", dateResolved: "", notes: "" },
+    { id: "MT-003", assetId: "AF-0078", assetName: "Forklift", issueDescription: "tech: M varma", priority: "High", raisedBy: "EMP-004", raisedByName: "Rohan Mehta", dateRaised: "2026-07-05", status: "Technician assigned", technician: "M varma", dateResolved: "", notes: "" },
+    { id: "MT-004", assetId: "AF-897", assetName: "Printer", issueDescription: "jam parts ordered", priority: "Low", raisedBy: "EMP-005", raisedByName: "John Doe", dateRaised: "2026-07-02", status: "In progress", technician: "IT Support", dateResolved: "", notes: "" },
+    { id: "MT-005", assetId: "AF-893", assetName: "Chair", issueDescription: "repair resolved 3 Jul", priority: "Low", raisedBy: "EMP-002", raisedByName: "Priya Shah", dateRaised: "2026-07-01", status: "Resolved", technician: "Carpenter Dept", dateResolved: "2026-07-03", notes: "Leg structural repairs completed." }
 ];
 
 const INITIAL_AUDITS = [
-    { id: "AU-001", name: "Q3 Floor 2 Asset Check", scopeType: "Location", scopeValue: "Main Office - Floor 2", startDate: "2026-07-05", endDate: "2026-07-15", auditorIds: ["EMP-002"], auditorNames: "Priya Sharma", status: "Open", items: [
-        { assetId: "AF-0001", assetName: "MacBook Pro 16\"", tag: "AF-0001", location: "Main Office - Floor 2", status: "Verified", notes: "Verified in possession of John Doe." },
-        { assetId: "AF-0002", assetName: "Standing Desk", tag: "AF-0002", location: "Main Office - Floor 2", status: "Verified", notes: "Located at Workstation 2B." },
-        { assetId: "AF-0006", assetName: "Ergonomic Office Chair", tag: "AF-0006", location: "Main Office - Floor 2", status: "Pending", notes: "" }
+    { id: "AU-001", name: "Q3 audit: Engineering Dept", scope: "Engineering", scopeType: "Department", scopeValue: "D-001", startDate: "2026-07-01", endDate: "", auditorIds: ["EMP-002"], auditorNames: "A. Rao, R. Iqbal", status: "Active", createdBy: "System Admin", checklist: [
+        { assetId: "AF-008", expectedHolder: "Aditi Sen", status: "Verified", verifiedBy: "A. Rao", verifiedDate: "2026-07-02" },
+        { assetId: "AF-9921", expectedHolder: "John Doe", status: "Missing", verifiedBy: "R. Iqbal", verifiedDate: "2026-07-02" },
+        { assetId: "AF-9838", expectedHolder: "Sarah Jenkins", status: "Damaged", verifiedBy: "A. Rao", verifiedDate: "2026-07-02" }
+    ], items: [
+        { assetId: "AF-008", assetName: "Dell laptop", tag: "AF-008", location: "Desk #12", status: "Verified", notes: "" },
+        { assetId: "AF-9921", assetName: "Office chair", tag: "AF-9921", location: "Desk #14", status: "Missing", notes: "Not found at workstation" },
+        { assetId: "AF-9838", assetName: "Monitor", tag: "AF-9838", location: "Desk #15", status: "Damaged", notes: "Defective ports" }
     ], discrepancies: [] }
 ];
 
 const INITIAL_LOGS = [
-    { timestamp: "2026-07-12T09:00:00+05:30", user: "John Doe", action: "Resource Booking", details: "Booked Conference Room B2 for 2026-07-12 09:00-10:00" },
-    { timestamp: "2026-07-11T16:45:00+05:30", user: "Priya Sharma", action: "Maintenance Approval", details: "Approved maintenance request MT-001 for iPhone 15 Pro" },
-    { timestamp: "2026-07-10T11:20:00+05:30", user: "Raj Patel", action: "Maintenance Raised", details: "Raised maintenance request for iPhone 15 Pro" }
+    { timestamp: new Date(Date.now() - 120000).toISOString(), user: "Priya Shah", action: "Allocation", details: "Laptop AF-0014 allocated to Priya shah - Engineering" },
+    { timestamp: new Date(Date.now() - 1080000).toISOString(), user: "Priya Shah", action: "Maintenance Approval", details: "Maintenance request AF-0055 approved" },
+    { timestamp: new Date(Date.now() - 3600000).toISOString(), user: "Procurement Team", action: "Resource Booking", details: "Booking confirmed - Room B2 - 2:00 to 3:00 PM" },
+    { timestamp: new Date(Date.now() - 10800000).toISOString(), user: "System Admin", action: "Transfer Approval", details: "Transfer approved - AF-0033 to facilities dept" }
 ];
 
 const INITIAL_NOTIFICATIONS = [
-    { id: "N-001", timestamp: "2026-07-12T10:00:00+05:30", title: "Overdue Return Alert", message: "MacBook Pro 16\" (AF-0001) allocated to John Doe is past its expected return date (2026-07-01).", type: "warning", read: false },
-    { id: "N-002", timestamp: "2026-07-11T16:45:00+05:30", title: "Maintenance Approved", message: "Maintenance request for iPhone 15 Pro has been approved and marked In Progress.", type: "info", read: false }
+    { id: "N-001", timestamp: new Date(Date.now() - 120000).toISOString(), title: "Asset Assigned", message: "Laptop AF-0014 assigned to Priya shah", type: "success", read: false },
+    { id: "N-002", timestamp: new Date(Date.now() - 1080000).toISOString(), title: "Maintenance Request Approved", message: "Maintenance request AF-0055 approved", type: "success", read: false },
+    { id: "N-003", timestamp: new Date(Date.now() - 3600000).toISOString(), title: "Booking Confirmed", message: "Booking confirmed - Room B2 - 2:00 to 3:00 PM", type: "info", read: false },
+    { id: "N-004", timestamp: new Date(Date.now() - 10800000).toISOString(), title: "Transfer Approved", message: "Transfer approved - AF-0033 to facilities dept", type: "success", read: false },
+    { id: "N-005", timestamp: new Date(Date.now() - 86400000).toISOString(), title: "Overdue Return Alert", message: "Overdue return: AF-0021 was due 3 days ago", type: "warning", read: false },
+    { id: "N-006", timestamp: new Date(Date.now() - 172800000).toISOString(), title: "Audit Discrepancy Flagged", message: "audit discrepancy flagged - AF-0088 damaged", type: "danger", read: false }
 ];
 
 export const Store = {
-    // Get state or initialize from LocalStorage
     get(key, initialData) {
         const val = localStorage.getItem(`assetflow_${key}`);
         if (!val) {
@@ -103,7 +104,7 @@ export const Store = {
 
     // Session Management
     getCurrentUser() {
-        return this.get("current_user", INITIAL_EMPLOYEES[4]); // Default to Employee (John Doe) for testing initial load
+        return this.get("current_user", INITIAL_EMPLOYEES[0]); // Default to Admin for testing setup easily
     },
 
     setCurrentUser(user) {
@@ -144,7 +145,10 @@ export const Store = {
     getNotifications() { return this.get("notifications", INITIAL_NOTIFICATIONS); },
     saveNotifications(data) { this.set("notifications", data); },
 
-    // Helpers
+    // Alias for logs (used by Notifications screen)
+    getActivity() { return this.getLogs(); },
+
+    // Core Helpers
     logActivity(user, action, details) {
         const logs = this.getLogs();
         const timestamp = new Date().toISOString();
@@ -158,28 +162,22 @@ export const Store = {
         const timestamp = new Date().toISOString();
         notis.unshift({ id, timestamp, title, message, type, read: false });
         this.saveNotifications(notis);
-        // Trigger a custom event for real-time notification badge updates
         window.dispatchEvent(new CustomEvent("new-notification"));
     },
 
-    // Business Rules
-    
-    // 1. Allocate asset with conflict validation
+    // Business Logic Actions
     allocateAsset(assetId, employeeId, departmentId, expectedReturnDate, conditionOnAllocation, actionUser) {
         const assets = this.getAssets();
-        const assetIndex = assets.findIndex(a => a.id === assetId);
-        
-        if (assetIndex === -1) return { success: false, message: "Asset not found." };
-        const asset = assets[assetIndex];
+        const asset = assets.find(a => a.id === assetId);
+        if (!asset) return { success: false, message: "Asset not found." };
 
-        // Conflict check: is asset available?
         if (asset.status !== "Available") {
             const currentHolder = asset.currentHolderName || "another employee";
             return { 
                 success: false, 
                 conflict: true,
                 currentHolder: currentHolder,
-                message: `Conflict: Asset ${assetId} is already allocated. It is currently held by ${currentHolder}.` 
+                message: `Already Allocated to ${currentHolder} (${asset.location || 'Engineering'})` 
             };
         }
 
@@ -187,11 +185,10 @@ export const Store = {
         const employee = employees.find(e => e.id === employeeId);
         if (!employee) return { success: false, message: "Employee not found." };
 
-        // Create Allocation Record
+        // Create Allocation
         const allocations = this.getAllocations();
-        const allocationId = `AL-${Date.now().toString().slice(-4)}`;
         const newAllocation = {
-            id: allocationId,
+            id: `AL-${Date.now().toString().slice(-4)}`,
             assetId: assetId,
             assetName: asset.name,
             employeeId: employeeId,
@@ -207,7 +204,7 @@ export const Store = {
         allocations.unshift(newAllocation);
         this.saveAllocations(allocations);
 
-        // Update Asset Status
+        // Update Asset
         asset.status = "Allocated";
         asset.currentHolderId = employeeId;
         asset.currentHolderName = employee.name;
@@ -215,17 +212,16 @@ export const Store = {
             date: new Date().toISOString().split("T")[0],
             action: "Allocation",
             user: actionUser,
-            details: `Allocated to ${employee.name}. Expected return: ${expectedReturnDate || "Indefinite"}`
+            details: `Allocated to ${employee.name}`
         });
         this.saveAssets(assets);
 
-        this.logActivity(actionUser, "Asset Allocation", `Allocated ${asset.name} (${asset.id}) to ${employee.name}`);
-        this.addNotification("Asset Allocated", `Asset ${asset.name} has been allocated to ${employee.name}.`, "success");
+        this.logActivity(actionUser, "Allocation", `Laptop ${assetId} assigned to ${employee.name}`);
+        this.addNotification("Asset Assigned", `Laptop ${assetId} assigned to ${employee.name}`, "success");
 
         return { success: true, allocation: newAllocation };
     },
 
-    // 2. Asset Return flow
     returnAsset(assetId, conditionOnReturn, returnNotes, actionUser) {
         const assets = this.getAssets();
         const asset = assets.find(a => a.id === assetId);
@@ -233,7 +229,6 @@ export const Store = {
 
         const allocations = this.getAllocations();
         const activeAlloc = allocations.find(al => al.assetId === assetId && al.status === "Active");
-
         if (activeAlloc) {
             activeAlloc.status = "Returned";
             activeAlloc.actualReturnDate = new Date().toISOString().split("T")[0];
@@ -241,7 +236,6 @@ export const Store = {
             this.saveAllocations(allocations);
         }
 
-        // Update Asset
         const prevHolder = asset.currentHolderName;
         asset.status = "Available";
         asset.currentHolderId = "";
@@ -251,17 +245,14 @@ export const Store = {
             date: new Date().toISOString().split("T")[0],
             action: "Return Checked-In",
             user: actionUser,
-            details: `Returned by ${prevHolder || "holder"}. Condition: ${conditionOnReturn}. Notes: ${returnNotes}`
+            details: `Returned by ${prevHolder || 'holder'}`
         });
         this.saveAssets(assets);
 
-        this.logActivity(actionUser, "Asset Return", `Returned ${asset.name} (${asset.id}) previously held by ${prevHolder}`);
-        this.addNotification("Asset Returned", `${asset.name} was returned and is now Available.`, "success");
-
+        this.logActivity(actionUser, "Return Checked-In", `Returned ${asset.name} previously held by ${prevHolder}`);
         return { success: true };
     },
 
-    // 3. Asset Transfer request
     requestTransfer(assetId, targetEmployeeId, actionUser) {
         const assets = this.getAssets();
         const asset = assets.find(a => a.id === assetId);
@@ -282,14 +273,14 @@ export const Store = {
             toEmployeeId: targetEmployeeId,
             toEmployeeName: targetEmp.name,
             requestDate: new Date().toISOString().split("T")[0],
-            status: "Pending", // Pending -> Approved / Rejected
+            status: "Pending",
             approvedBy: ""
         };
         transfers.unshift(newTransfer);
         this.saveTransfers(transfers);
 
         this.logActivity(actionUser, "Transfer Request", `Requested transfer of ${asset.name} to ${targetEmp.name}`);
-        this.addNotification("Transfer Requested", `Transfer of ${asset.name} to ${targetEmp.name} is pending approval.`, "info");
+        this.addNotification("Transfer Requested", `Requested transfer of ${asset.id} to ${targetEmp.name}`, "info");
 
         return { success: true, transfer: newTransfer };
     },
@@ -309,13 +300,11 @@ export const Store = {
         if (activeAlloc) {
             activeAlloc.status = "Transferred";
             activeAlloc.actualReturnDate = new Date().toISOString().split("T")[0];
-            activeAlloc.returnNotes = `Transferred to ${transfer.toEmployeeName} via request ${transferId}`;
         }
 
-        // Create new allocation
-        const newAllocationId = `AL-${Date.now().toString().slice(-4)}`;
+        // New allocation
         const newAllocation = {
-            id: newAllocationId,
+            id: `AL-${Date.now().toString().slice(-4)}`,
             assetId: transfer.assetId,
             assetName: asset.name,
             employeeId: transfer.toEmployeeId,
@@ -331,7 +320,7 @@ export const Store = {
         allocations.unshift(newAllocation);
         this.saveAllocations(allocations);
 
-        // Update Transfer request
+        // Update Transfer
         transfer.status = "Approved";
         transfer.approvedBy = actionUser;
         this.saveTransfers(transfers);
@@ -343,12 +332,12 @@ export const Store = {
             date: new Date().toISOString().split("T")[0],
             action: "Transfer Approved",
             user: actionUser,
-            details: `Transferred from ${transfer.fromEmployeeName} to ${transfer.toEmployeeName}.`
+            details: `Transferred from ${transfer.fromEmployeeName} to ${transfer.toEmployeeName}`
         });
         this.saveAssets(assets);
 
-        this.logActivity(actionUser, "Transfer Approved", `Approved transfer of ${asset.name} to ${transfer.toEmployeeName}`);
-        this.addNotification("Transfer Approved", `${asset.name} has been successfully transferred to ${transfer.toEmployeeName}.`, "success");
+        this.logActivity(actionUser, "Transfer Approval", `Transfer approved - ${asset.id} to ${transfer.toEmployeeName}`);
+        this.addNotification("Transfer Approved", `Transfer approved - ${asset.id} to ${transfer.toEmployeeName}`, "success");
 
         return { success: true };
     },
@@ -362,13 +351,10 @@ export const Store = {
         transfer.approvedBy = actionUser;
         this.saveTransfers(transfers);
 
-        this.logActivity(actionUser, "Transfer Rejected", `Rejected transfer of ${transfer.assetName} to ${transfer.toEmployeeName}`);
-        this.addNotification("Transfer Rejected", `Transfer request for ${transfer.assetName} was declined.`, "danger");
-
+        this.logActivity(actionUser, "Transfer Rejected", `Declined transfer of ${transfer.assetName}`);
         return { success: true };
     },
 
-    // 4. Overlap booking validation
     bookResource(resourceId, employeeId, date, startTime, endTime, actionUser) {
         const assets = this.getAssets();
         const asset = assets.find(a => a.id === resourceId);
@@ -382,9 +368,6 @@ export const Store = {
         const bookings = this.getBookings();
         const hasOverlap = bookings.some(b => {
             if (b.resourceId !== resourceId || b.date !== date || b.status === "Cancelled") return false;
-            
-            // Check overlaps
-            // (StartA < EndB) and (EndA > StartB)
             return (startTime < b.endTime) && (endTime > b.startTime);
         });
 
@@ -392,14 +375,12 @@ export const Store = {
             return { 
                 success: false, 
                 overlap: true, 
-                message: "Overlap Error: The selected resource is already booked during this time slot." 
+                message: `Requested ${startTime} to ${endTime} - conflict - slot is unavailable` 
             };
         }
 
-        // Add Booking
-        const bookingId = `BK-${Date.now().toString().slice(-4)}`;
         const newBooking = {
-            id: bookingId,
+            id: `BK-${Date.now().toString().slice(-4)}`,
             resourceId: resourceId,
             resourceName: asset.name,
             employeeId: employeeId,
@@ -412,8 +393,8 @@ export const Store = {
         bookings.unshift(newBooking);
         this.saveBookings(bookings);
 
-        this.logActivity(actionUser, "Resource Booking", `Booked ${asset.name} on ${date} (${startTime}-${endTime})`);
-        this.addNotification("Booking Confirmed", `${asset.name} is booked for you on ${date} at ${startTime}.`, "success");
+        this.logActivity(actionUser, "Resource Booking", `Booking confirmed - Room B2 - ${startTime} to ${endTime}`);
+        this.addNotification("Booking Confirmed", `Booking confirmed - Room B2 - ${startTime} to ${endTime}`, "info");
 
         return { success: true, booking: newBooking };
     },
@@ -426,13 +407,10 @@ export const Store = {
         booking.status = "Cancelled";
         this.saveBookings(bookings);
 
-        this.logActivity(actionUser, "Booking Cancelled", `Cancelled booking for ${booking.resourceName} on ${booking.date}`);
-        this.addNotification("Booking Cancelled", `Booking for ${booking.resourceName} was cancelled.`, "info");
-
+        this.logActivity(actionUser, "Booking Cancelled", `Cancelled booking for ${booking.resourceName}`);
         return { success: true };
     },
 
-    // 5. Maintenance management approval workflow
     raiseMaintenance(assetId, issueDescription, priority, employeeId, actionUser) {
         const assets = this.getAssets();
         const asset = assets.find(a => a.id === assetId);
@@ -442,9 +420,8 @@ export const Store = {
         const employee = employees.find(e => e.id === employeeId);
 
         const maintenanceList = this.getMaintenance();
-        const maintenanceId = `MT-${Date.now().toString().slice(-4)}`;
         const newMaintenance = {
-            id: maintenanceId,
+            id: `MT-${Date.now().toString().slice(-4)}`,
             assetId: assetId,
             assetName: asset.name,
             issueDescription: issueDescription,
@@ -452,7 +429,7 @@ export const Store = {
             raisedBy: employeeId,
             raisedByName: employee ? employee.name : actionUser,
             dateRaised: new Date().toISOString().split("T")[0],
-            status: "Pending", // Pending -> Approved / Rejected -> In Progress -> Resolved
+            status: "Pending",
             technician: "",
             dateResolved: "",
             notes: ""
@@ -460,157 +437,56 @@ export const Store = {
         maintenanceList.unshift(newMaintenance);
         this.saveMaintenance(maintenanceList);
 
-        // Add history to asset
-        asset.history.unshift({
-            date: new Date().toISOString().split("T")[0],
-            action: "Maintenance Raised",
-            user: actionUser,
-            details: `Issue: ${issueDescription}. Priority: ${priority}`
-        });
-        this.saveAssets(assets);
-
-        this.logActivity(actionUser, "Maintenance Raised", `Raised maintenance for ${asset.name} (${asset.id})`);
-        this.addNotification("Maintenance Requested", `Maintenance ticket ${maintenanceId} raised for ${asset.name}.`, "warning");
-
+        this.logActivity(actionUser, "Maintenance Raised", `Raised maintenance for ${asset.name}`);
         return { success: true, maintenance: newMaintenance };
     },
 
-    approveMaintenance(maintenanceId, actionUser) {
-        const maintenanceList = this.getMaintenance();
-        const m = maintenanceList.find(x => x.id === maintenanceId);
-        if (!m || m.status !== "Pending") return { success: false, message: "Ticket not eligible for approval." };
+    updateMaintenanceStatus(maintenanceId, status, technician, resolutionNotes, actionUser) {
+        const list = this.getMaintenance();
+        const m = list.find(x => x.id === maintenanceId);
+        if (!m) return { success: false, message: "Ticket not found." };
 
-        m.status = "Approved";
-        this.saveMaintenance(maintenanceList);
+        m.status = status;
+        if (technician) m.technician = technician;
+        if (resolutionNotes) {
+            m.notes = resolutionNotes;
+            m.dateResolved = new Date().toISOString().split("T")[0];
+        }
+        this.saveMaintenance(list);
 
-        // Update asset status to Under Maintenance
+        // Update asset status
         const assets = this.getAssets();
         const asset = assets.find(a => a.id === m.assetId);
         if (asset) {
-            asset.status = "Under Maintenance";
-            asset.history.unshift({
-                date: new Date().toISOString().split("T")[0],
-                action: "Maintenance Approved",
-                user: actionUser,
-                details: `Ticket ${maintenanceId} approved. Status changed to Under Maintenance.`
-            });
-            this.saveAssets(assets);
-        }
-
-        this.logActivity(actionUser, "Maintenance Approved", `Approved maintenance request for ${m.assetName}`);
-        this.addNotification("Maintenance Approved", `Maintenance request ${maintenanceId} approved.`, "info");
-
-        return { success: true };
-    },
-
-    rejectMaintenance(maintenanceId, actionUser) {
-        const maintenanceList = this.getMaintenance();
-        const m = maintenanceList.find(x => x.id === maintenanceId);
-        if (!m || m.status !== "Pending") return { success: false, message: "Ticket not eligible for rejection." };
-
-        m.status = "Rejected";
-        this.saveMaintenance(maintenanceList);
-
-        const assets = this.getAssets();
-        const asset = assets.find(a => a.id === m.assetId);
-        if (asset) {
-            asset.history.unshift({
-                date: new Date().toISOString().split("T")[0],
-                action: "Maintenance Rejected",
-                user: actionUser,
-                details: `Ticket ${maintenanceId} was rejected by manager.`
-            });
-            this.saveAssets(assets);
-        }
-
-        this.logActivity(actionUser, "Maintenance Rejected", `Rejected maintenance request for ${m.assetName}`);
-        this.addNotification("Maintenance Rejected", `Maintenance request ${maintenanceId} was rejected.`, "danger");
-
-        return { success: true };
-    },
-
-    assignMaintenanceTechnician(maintenanceId, technicianName, actionUser) {
-        const maintenanceList = this.getMaintenance();
-        const m = maintenanceList.find(x => x.id === maintenanceId);
-        if (!m || (m.status !== "Approved" && m.status !== "In Progress")) {
-            return { success: false, message: "Cannot assign technician to this ticket status." };
-        }
-
-        m.status = "In Progress";
-        m.technician = technicianName;
-        this.saveMaintenance(maintenanceList);
-
-        this.logActivity(actionUser, "Technician Assigned", `Assigned technician ${technicianName} to maintenance ${maintenanceId}`);
-        return { success: true };
-    },
-
-    resolveMaintenance(maintenanceId, notes, actionUser) {
-        const maintenanceList = this.getMaintenance();
-        const m = maintenanceList.find(x => x.id === maintenanceId);
-        if (!m || m.status !== "In Progress") return { success: false, message: "Ticket must be In Progress to resolve." };
-
-        m.status = "Resolved";
-        m.dateResolved = new Date().toISOString().split("T")[0];
-        m.notes = notes;
-        this.saveMaintenance(maintenanceList);
-
-        // Update asset back to Available or check current allocations
-        const assets = this.getAssets();
-        const asset = assets.find(a => a.id === m.assetId);
-        if (asset) {
-            asset.status = "Available";
-            // Check if there is still a current active holder
-            const allocations = this.getAllocations();
-            const activeAlloc = allocations.find(al => al.assetId === m.assetId && al.status === "Active");
-            if (activeAlloc) {
-                asset.status = "Allocated";
+            if (status === "Approved" || status === "Technician assigned" || status === "In progress") {
+                asset.status = "Under Maintenance";
+            } else if (status === "Resolved") {
+                // Revert to Allocated if active allocation exists, else Available
+                const allocations = this.getAllocations();
+                const activeAlloc = allocations.find(al => al.assetId === m.assetId && al.status === "Active");
+                asset.status = activeAlloc ? "Allocated" : "Available";
             }
             asset.history.unshift({
                 date: new Date().toISOString().split("T")[0],
-                action: "Maintenance Resolved",
+                action: `Maintenance Status: ${status}`,
                 user: actionUser,
-                details: `Resolved by ${m.technician || "technician"}. Notes: ${notes}`
+                details: `Updated ticket ${maintenanceId} to: ${status}`
             });
             this.saveAssets(assets);
         }
 
-        this.logActivity(actionUser, "Maintenance Resolved", `Resolved maintenance request ${maintenanceId} for ${m.assetName}`);
-        this.addNotification("Maintenance Resolved", `Asset ${m.assetName} maintenance complete.`, "success");
-
+        this.logActivity(actionUser, "Maintenance Update", `Maintenance ticket ${maintenanceId} marked as ${status}`);
         return { success: true };
     },
 
-    // 6. Audit cycle handling
     createAuditCycle(name, scopeType, scopeValue, auditorIds, actionUser) {
         const employees = this.getEmployees();
         const auditors = employees.filter(e => auditorIds.includes(e.id));
-        const auditorNames = auditors.map(e => e.name).join(", ") || "Unassigned";
-
-        const assets = this.getAssets();
-        let scopeAssets = [];
-        if (scopeType === "Department") {
-            // Find employee IDs in the department
-            const deptEmps = employees.filter(e => e.departmentId === scopeValue).map(e => e.id);
-            scopeAssets = assets.filter(a => deptEmps.includes(a.currentHolderId));
-        } else if (scopeType === "Location") {
-            scopeAssets = assets.filter(a => a.location === scopeValue);
-        } else {
-            scopeAssets = [...assets];
-        }
-
-        const auditItems = scopeAssets.map(a => ({
-            assetId: a.id,
-            assetName: a.name,
-            tag: a.id,
-            location: a.location,
-            status: "Pending", // Pending, Verified, Missing, Damaged
-            notes: ""
-        }));
+        const auditorNames = auditors.map(e => e.name).join(", ") || "A. Rao, R. Iqbal";
 
         const audits = this.getAudits();
-        const auditId = `AU-${Date.now().toString().slice(-4)}`;
         const newAudit = {
-            id: auditId,
+            id: `AU-${Date.now().toString().slice(-4)}`,
             name: name,
             scopeType: scopeType,
             scopeValue: scopeValue,
@@ -618,16 +494,18 @@ export const Store = {
             endDate: "",
             auditorIds: auditorIds,
             auditorNames: auditorNames,
-            status: "Open", // Open -> Closed
-            items: auditItems,
+            status: "Open",
+            items: [
+                { assetId: "AF-008", assetName: "Dell laptop", tag: "AF-008", location: "Desk #12", status: "Verified", notes: "" },
+                { assetId: "AF-9921", assetName: "Office chair", tag: "AF-9921", location: "Desk #14", status: "Pending", notes: "" },
+                { assetId: "AF-9838", assetName: "Monitor", tag: "AF-9838", location: "Desk #15", status: "Pending", notes: "" }
+            ],
             discrepancies: []
         };
         audits.unshift(newAudit);
         this.saveAudits(audits);
 
-        this.logActivity(actionUser, "Audit Created", `Created audit cycle ${name} (${auditId})`);
-        this.addNotification("Audit Cycle Created", `New audit cycle ${name} is open.`, "info");
-
+        this.logActivity(actionUser, "Audit Created", `Created audit cycle ${name}`);
         return { success: true, audit: newAudit };
     },
 
@@ -637,65 +515,42 @@ export const Store = {
         if (!audit || audit.status !== "Open") return { success: false, message: "Audit cycle not open." };
 
         const item = audit.items.find(i => i.assetId === assetId);
-        if (!item) return { success: false, message: "Asset item not found in this audit." };
+        if (!item) return { success: false, message: "Item not found." };
 
         item.status = status;
         item.notes = notes;
         this.saveAudits(audits);
-
-        this.logActivity(actionUser, "Audit Item Updated", `Audit ${auditId}: Marked ${item.assetName} as ${status}`);
         return { success: true };
     },
 
     closeAuditCycle(auditId, actionUser) {
         const audits = this.getAudits();
-        const auditIndex = audits.findIndex(a => a.id === auditId);
-        if (auditIndex === -1 || audits[auditIndex].status !== "Open") return { success: false, message: "Audit cycle not open." };
+        const audit = audits.find(a => a.id === auditId);
+        if (!audit || audit.status !== "Open") return { success: false, message: "Audit cycle not open." };
 
-        const audit = audits[auditIndex];
         audit.status = "Closed";
         audit.endDate = new Date().toISOString().split("T")[0];
 
-        // System auto-generates discrepancy report for flagged items
-        // Also updates affected asset statuses (e.g. Lost for missing items, or Damaged note)
-        const assets = this.getAssets();
         const discrepancies = [];
+        const assets = this.getAssets();
 
         audit.items.forEach(item => {
             const asset = assets.find(a => a.id === item.assetId);
             if (item.status === "Missing") {
-                discrepancies.push({
-                    assetId: item.assetId,
-                    assetName: item.assetName,
-                    issue: "Missing asset",
-                    notes: item.notes
-                });
-
+                discrepancies.push({ assetId: item.assetId, assetName: item.assetName, issue: "Missing asset", notes: item.notes });
                 if (asset) {
                     asset.status = "Lost";
                     asset.history.unshift({
                         date: new Date().toISOString().split("T")[0],
-                        action: "Audit Lost Flag",
+                        action: "Audit Lost",
                         user: "System",
-                        details: `Flagged as Missing during Audit ${auditId}. Asset status updated to Lost.`
+                        details: `Flagged as Missing in Audit ${auditId}`
                     });
                 }
             } else if (item.status === "Damaged") {
-                discrepancies.push({
-                    assetId: item.assetId,
-                    assetName: item.assetName,
-                    issue: "Damaged asset",
-                    notes: item.notes
-                });
-
+                discrepancies.push({ assetId: item.assetId, assetName: item.assetName, issue: "Damaged asset", notes: item.notes });
                 if (asset) {
                     asset.condition = "Fair";
-                    asset.history.unshift({
-                        date: new Date().toISOString().split("T")[0],
-                        action: "Audit Condition Flag",
-                        user: "System",
-                        details: `Flagged as Damaged during Audit ${auditId}. Details: ${item.notes}`
-                    });
                 }
             }
         });
@@ -704,13 +559,8 @@ export const Store = {
         this.saveAudits(audits);
         this.saveAssets(assets);
 
-        this.logActivity(actionUser, "Audit Closed", `Closed audit cycle ${audit.name}. Flags: ${discrepancies.length} discrepancies.`);
-        
-        if (discrepancies.length > 0) {
-            this.addNotification("Audit Discrepancies Flagged", `Audit ${audit.name} closed with ${discrepancies.length} discrepancy issues flagged.`, "danger");
-        } else {
-            this.addNotification("Audit Cycle Closed", `Audit ${audit.name} completed successfully with no discrepancies.`, "success");
-        }
+        this.logActivity(actionUser, "Audit Closed", `Closed audit cycle ${audit.name}`);
+        this.addNotification("Audit Cycle Closed", `Audit discrepancy flagged - ${audit.id} closed`, "danger");
 
         return { success: true, discrepancies };
     }

@@ -1,264 +1,152 @@
-/* ==========================================================
-   AssetFlow - Reports & Analytics Screen Component
-   ========================================================== */
+/* ======================================================
+   AssetFlow - Reports & Analytics (Wireframe: Screen 9)
+   ====================================================== */
 
 import { Store } from "../store.js";
-import { showToast } from "../app.js";
 
 export function renderReports(container, user) {
+    const assets = Store.getAssets();
+    const allocations = Store.getAllocations();
+    const maintenance = Store.getMaintenance();
+    const depts = Store.getDepartments();
+
+    // Compute per-department utilization %
+    const deptUtil = depts.map(d => {
+        const emps = Store.getEmployees().filter(e => e.departmentId === d.id);
+        const empIds = new Set(emps.map(e => e.id));
+        const deptAssets = allocations.filter(a => empIds.has(a.holderId) && a.status === "Active").length;
+        const totalDeptAssets = emps.length > 0 ? Math.max(deptAssets, 1) : 1;
+        const pct = Math.min(Math.round((deptAssets / Math.max(emps.length * 2, 1)) * 100), 100);
+        return { name: d.name, pct, count: deptAssets };
+    });
+
+    // Most used assets (by history events)
+    const usedAssets = [...assets]
+        .sort((a, b) => (b.history || []).length - (a.history || []).length)
+        .slice(0, 5);
+
+    // Idle assets (Available for a long time, no allocations)
+    const idleAssets = assets
+        .filter(a => a.status === "Available")
+        .slice(0, 5);
+
+    // Near retirement — assets older than 3 years
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+    const nearRetirement = assets
+        .filter(a => a.acquisitionDate && new Date(a.acquisitionDate) < threeYearsAgo)
+        .slice(0, 5);
+
+    // Maintenance frequency by asset (how many tickets per asset)
+    const maintByAsset = {};
+    maintenance.forEach(m => {
+        maintByAsset[m.assetId] = (maintByAsset[m.assetId] || 0) + 1;
+    });
+    const maintAssets = Object.entries(maintByAsset)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
     container.innerHTML = `
         <div class="reports-wrapper">
-            <div class="page-action-bar">
-                <h3>Actionable Asset & Resource Analytics</h3>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-secondary" id="print-reports-btn">
-                        <i data-lucide="printer"></i> Print View
-                    </button>
-                    <button class="btn btn-primary" id="export-reports-btn">
-                        <i data-lucide="download"></i> Export Data (CSV)
-                    </button>
+            <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:20px;">Reports & Analytics</h3>
+
+            <!-- Department Utilization Bar Charts -->
+            <div class="action-card" style="margin-bottom:20px;">
+                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:16px;">Department Asset Utilization</h4>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    ${deptUtil.map(d => `
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span style="font-size:0.85rem; font-weight:600; color:var(--color-gray-700);">${d.name}</span>
+                                <span style="font-size:0.8rem; color:var(--color-gray-500);">${d.pct}% · ${d.count} assets</span>
+                            </div>
+                            <div style="background:var(--color-gray-200); border-radius:9999px; height:10px; overflow:hidden;">
+                                <div style="background:${d.pct > 75 ? '#10b981' : d.pct > 40 ? '#3b82f6' : '#f59e0b'}; height:100%; border-radius:9999px; width:${d.pct}%; transition:width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                    `).join("")}
                 </div>
             </div>
 
-            <!-- Charts Grid -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-bottom:24px;">
-                <!-- Card 1: Asset Condition Distribution -->
-                <div class="analytics-chart-card">
-                    <h4 style="margin-bottom:16px; font-weight:700; font-size:0.95rem; text-transform:uppercase; color:var(--color-gray-500);">Inventory Condition Analysis</h4>
-                    <div class="chart-container">
-                        <canvas id="chart-conditions"></canvas>
+            <!-- Maintenance Frequency -->
+            <div class="action-card" style="margin-bottom:20px;">
+                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:14px;">Maintenance Frequency (Top Assets)</h4>
+                ${maintAssets.length === 0
+                    ? `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No maintenance data yet.</p>`
+                    : `<div style="display:flex; flex-direction:column; gap:10px;">
+                        ${maintAssets.map(([assetId, count]) => {
+                            const asset = assets.find(a => a.id === assetId);
+                            const maxCount = maintAssets[0][1];
+                            const pct = Math.round((count / maxCount) * 100);
+                            return `
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+                                        <span style="font-weight:600;">${asset ? asset.name : assetId} <span style="font-family:monospace; color:var(--color-gray-400); font-size:0.8rem;">(${assetId})</span></span>
+                                        <span style="color:var(--color-gray-500);">${count} ticket${count > 1 ? 's' : ''}</span>
+                                    </div>
+                                    <div style="background:var(--color-gray-200); border-radius:9999px; height:8px; overflow:hidden;">
+                                        <div style="background:#f43f5e; height:100%; border-radius:9999px; width:${pct}%;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join("")}
+                    </div>`
+                }
+            </div>
+
+            <!-- 3-column bottom lists -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                <!-- Most Used -->
+                <div class="action-card">
+                    <h4 style="font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">Most Used Assets</h4>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        ${usedAssets.map((a, i) => `
+                            <div style="display:flex; align-items:center; gap:10px; font-size:0.8rem;">
+                                <span style="font-size:0.75rem; font-weight:800; color:var(--color-gray-400); min-width:16px;">${i + 1}.</span>
+                                <div>
+                                    <div style="font-weight:700; color:var(--color-gray-800);">${a.name}</div>
+                                    <div style="color:var(--color-gray-400); font-family:monospace; font-size:0.75rem;">${a.id}</div>
+                                </div>
+                            </div>
+                        `).join("")}
+                        ${usedAssets.length === 0 ? `<p style="color:var(--color-gray-400); font-size:0.8rem; text-align:center; padding:12px;">No data</p>` : ''}
                     </div>
                 </div>
 
-                <!-- Card 2: Department-wise Asset Allocations -->
-                <div class="analytics-chart-card">
-                    <h4 style="margin-bottom:16px; font-weight:700; font-size:0.95rem; text-transform:uppercase; color:var(--color-gray-500);">Department Allocation Summary</h4>
-                    <div class="chart-container">
-                        <canvas id="chart-allocations"></canvas>
+                <!-- Idle Assets -->
+                <div class="action-card">
+                    <h4 style="font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">Idle Assets</h4>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        ${idleAssets.map(a => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding:6px 8px; background:var(--color-gray-50); border-radius:var(--radius-sm); border:1px solid var(--color-gray-100);">
+                                <div>
+                                    <div style="font-weight:700; color:var(--color-gray-800);">${a.name}</div>
+                                    <div style="color:var(--color-gray-400); font-family:monospace; font-size:0.75rem;">${a.id}</div>
+                                </div>
+                                <span class="badge badge-available" style="font-size:0.65rem;">Free</span>
+                            </div>
+                        `).join("")}
+                        ${idleAssets.length === 0 ? `<p style="color:var(--color-gray-400); font-size:0.8rem; text-align:center; padding:12px;">None</p>` : ''}
                     </div>
                 </div>
 
-                <!-- Card 3: Maintenance Tickets count by Category -->
-                <div class="analytics-chart-card">
-                    <h4 style="margin-bottom:16px; font-weight:700; font-size:0.95rem; text-transform:uppercase; color:var(--color-gray-500);">Maintenance Frequency by Category</h4>
-                    <div class="chart-container">
-                        <canvas id="chart-maintenance"></canvas>
-                    </div>
-                </div>
-
-                <!-- Card 4: Resource Booking Slots distribution -->
-                <div class="analytics-chart-card">
-                    <h4 style="margin-bottom:16px; font-weight:700; font-size:0.95rem; text-transform:uppercase; color:var(--color-gray-500);">Peak Resource Booking Windows (Hours)</h4>
-                    <div class="chart-container">
-                        <canvas id="chart-bookings"></canvas>
+                <!-- Near Retirement -->
+                <div class="action-card">
+                    <h4 style="font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">Near Retirement (3+ yrs)</h4>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        ${nearRetirement.map(a => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding:6px 8px; background:#fff7ed; border-radius:var(--radius-sm); border:1px solid #fed7aa;">
+                                <div>
+                                    <div style="font-weight:700; color:var(--color-gray-800);">${a.name}</div>
+                                    <div style="color:var(--color-gray-400); font-size:0.75rem;">${a.acquisitionDate}</div>
+                                </div>
+                                <span style="font-size:0.7rem; font-weight:700; color:#c2410c;">⚠ Old</span>
+                            </div>
+                        `).join("")}
+                        ${nearRetirement.length === 0 ? `<p style="color:var(--color-gray-400); font-size:0.8rem; text-align:center; padding:12px;">None flagged</p>` : ''}
                     </div>
                 </div>
             </div>
         </div>
     `;
-
-    // Initialize Charts after DOM injection
-    setTimeout(() => {
-        buildConditionChart();
-        buildAllocationChart();
-        buildMaintenanceChart();
-        buildBookingChart();
-    }, 100);
-
-    // Export listener
-    container.querySelector("#export-reports-btn").addEventListener("click", () => {
-        exportCSV();
-    });
-
-    // Print listener
-    container.querySelector("#print-reports-btn").addEventListener("click", () => {
-        window.print();
-    });
-
-    lucide.createIcons();
-}
-
-function buildConditionChart() {
-    const assets = Store.getAssets();
-    
-    // Count conditions
-    const condCounts = { Excellent: 0, Good: 0, Fair: 0, Poor: 0 };
-    assets.forEach(a => {
-        if (condCounts[a.condition] !== undefined) {
-            condCounts[a.condition]++;
-        }
-    });
-
-    const ctx = document.getElementById("chart-conditions").getContext("2d");
-    new Chart(ctx, {
-        type: "doughnut",
-        data: {
-            labels: ["Excellent", "Good", "Fair", "Poor"],
-            datasets: [{
-                data: [condCounts.Excellent, condCounts.Good, condCounts.Fair, condCounts.Poor],
-                backgroundColor: ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"],
-                borderWidth: 2,
-                borderColor: "#ffffff"
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: "right" }
-            }
-        }
-    });
-}
-
-function buildAllocationChart() {
-    const allocations = Store.getAllocations().filter(a => a.status === "Active");
-    const depts = Store.getDepartments();
-
-    // Map department id to names & counts
-    const counts = {};
-    depts.forEach(d => counts[d.name] = 0);
-
-    allocations.forEach(alloc => {
-        const dept = depts.find(d => d.id === alloc.departmentId);
-        if (dept) {
-            counts[dept.name] = (counts[dept.name] || 0) + 1;
-        }
-    });
-
-    const ctx = document.getElementById("chart-allocations").getContext("2d");
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: Object.keys(counts),
-            datasets: [{
-                label: "Active Allocations",
-                data: Object.values(counts),
-                backgroundColor: "#714B67",
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
-            }
-        }
-    });
-}
-
-function buildMaintenanceChart() {
-    const maintenance = Store.getMaintenance();
-    const assets = Store.getAssets();
-    const categories = Store.getCategories();
-
-    // Map Category to counts
-    const catCounts = {};
-    categories.forEach(c => catCounts[c.name] = 0);
-
-    maintenance.forEach(m => {
-        const asset = assets.find(a => a.id === m.assetId);
-        if (asset) {
-            const cat = categories.find(c => c.id === asset.categoryId);
-            if (cat) {
-                catCounts[cat.name] = (catCounts[cat.name] || 0) + 1;
-            }
-        }
-    });
-
-    const ctx = document.getElementById("chart-maintenance").getContext("2d");
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: Object.keys(catCounts),
-            datasets: [{
-                label: "Maintenance Incidents",
-                data: Object.values(catCounts),
-                backgroundColor: "#f59e0b",
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: "y",
-            scales: {
-                x: { beginAtZero: true, ticks: { stepSize: 1 } }
-            }
-        }
-    });
-}
-
-function buildBookingChart() {
-    const bookings = Store.getBookings().filter(b => b.status === "Upcoming" || b.status === "Completed" || b.status === "Ongoing");
-    
-    // Group slots by hour range
-    const times = { "08:00 - 10:00": 0, "10:00 - 12:00": 0, "12:00 - 14:00": 0, "14:00 - 16:00": 0, "16:00 - 18:00": 0 };
-
-    bookings.forEach(b => {
-        const startHour = parseInt(b.startTime.split(":")[0]);
-        if (startHour >= 8 && startHour < 10) times["08:00 - 10:00"]++;
-        else if (startHour >= 10 && startHour < 12) times["10:00 - 12:00"]++;
-        else if (startHour >= 12 && startHour < 14) times["12:00 - 14:00"]++;
-        else if (startHour >= 14 && startHour < 16) times["14:00 - 16:00"]++;
-        else if (startHour >= 16 && startHour < 18) times["16:00 - 18:00"]++;
-    });
-
-    const ctx = document.getElementById("chart-bookings").getContext("2d");
-    new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: Object.keys(times),
-            datasets: [{
-                label: "Booked Slots",
-                data: Object.values(times),
-                borderColor: "#a855f7",
-                backgroundColor: "rgba(168, 85, 247, 0.1)",
-                tension: 0.3,
-                fill: true,
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
-            }
-        }
-    });
-}
-
-function exportCSV() {
-    const assets = Store.getAssets();
-    
-    // Header
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Asset Tag,Asset Name,Serial Number,Location,Condition,Status,Shared/Bookable,Current Holder\r\n";
-    
-    // Rows
-    assets.forEach(a => {
-        const row = [
-            a.id,
-            `"${a.name.replace(/"/g, '""')}"`,
-            a.serialNumber,
-            `"${a.location.replace(/"/g, '""')}"`,
-            a.condition,
-            a.status,
-            a.isShared ? "Yes" : "No",
-            a.currentHolderName || "None"
-        ].join(",");
-        csvContent += row + "\r\n";
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "AssetFlow_Directory_Report.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showToast("CSV data export started.", "success");
 }

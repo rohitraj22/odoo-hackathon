@@ -1,5 +1,5 @@
 /* ==========================================
-   AssetFlow - Login & Signup Screen Component
+   AssetFlow - Login & Signup Screen Component (Wireframe Aligned)
    ========================================== */
 
 import { Store } from "../store.js";
@@ -8,45 +8,42 @@ import { checkAuthAndRoute, showToast } from "../app.js";
 export function renderLogin(container) {
     container.innerHTML = `
         <div class="auth-wrapper">
-            <div class="auth-card">
-                <div class="auth-logo">
-                    <i data-lucide="layers"></i>
-                    <span>Asset<span style="color: var(--color-primary-light);">Flow</span></span>
+            <div class="auth-card" style="padding: 30px;">
+                <div style="border: 2px solid var(--color-gray-900); border-radius: var(--radius-md); padding: 8px 16px; font-weight:800; font-size:1.2rem; text-align:center; margin-bottom: 24px; color:var(--color-gray-900);">
+                    AssetFlow – login
                 </div>
+                
+                <div class="brand-circle">AF</div>
                 
                 <!-- Toggle between Login and Signup -->
                 <div id="login-form-view">
-                    <div class="auth-header">
-                        <h2>Welcome back</h2>
-                        <p>Access your organization's AssetFlow dashboard</p>
-                    </div>
-                    
                     <form id="login-form">
                         <div class="form-group">
-                            <label for="login-email">Email Address</label>
+                            <label for="login-email">Email</label>
                             <input type="email" id="login-email" class="form-control" placeholder="name@company.com" required value="employee@assetflow.com">
                         </div>
-                        <div class="form-group">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <label for="login-password" style="margin-bottom:0;">Password</label>
-                                <button type="button" class="btn-text" id="forgot-pw-btn" style="font-size:0.775rem;">Forgot password?</button>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" class="form-control" placeholder="**********" required value="password">
+                            <div style="text-align:right; margin-top:6px;">
+                                <button type="button" class="btn-text" id="forgot-pw-btn" style="font-size:0.8rem; color:var(--color-gray-600);">Forgot password</button>
                             </div>
-                            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required value="password">
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Sign In</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px; border:2px solid var(--color-gray-900); background-color:var(--color-white); color:var(--color-gray-900); font-weight:700;">Sign In</button>
                     </form>
                     
-                    <div class="form-footer">
-                        <p style="font-size:0.85rem; color:var(--color-gray-500);">Don't have an account? <button class="btn-text" id="go-signup-btn">Create Employee Account</button></p>
+                    <div style="margin: 20px 0; border-top: 1px solid var(--color-gray-400);"></div>
+                    
+                    <div class="form-footer" style="margin-top:0;">
+                        <h4 style="font-size:0.9rem; text-align:left; color:var(--color-gray-800); margin-bottom:4px;">New here?</h4>
+                        <div style="border:1px solid var(--color-gray-300); border-radius:var(--radius-md); padding:10px; font-size:0.8rem; color:var(--color-gray-600); text-align:left; margin-bottom:12px; line-height:1.4;">
+                            Sign up creates an employee account admin roles assigned later
+                        </div>
+                        <button class="btn btn-secondary" id="go-signup-btn" style="width:100%; padding:10px; font-weight:600; border:2px solid var(--color-gray-900); color:var(--color-gray-900);">Create Account</button>
                     </div>
                 </div>
 
                 <div id="signup-form-view" class="hidden">
-                    <div class="auth-header">
-                        <h2>Create Account</h2>
-                        <p>Register as an Employee to request assets and resource bookings</p>
-                    </div>
-                    
                     <form id="signup-form">
                         <div class="form-group">
                             <label for="signup-name">Full Name</label>
@@ -64,34 +61,30 @@ export function renderLogin(container) {
                             <label for="signup-password">Password</label>
                             <input type="password" id="signup-password" class="form-control" placeholder="••••••••" required>
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Register</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px; border:2px solid var(--color-gray-900); background-color:var(--color-white); color:var(--color-gray-900); font-weight:700;">Sign Up & Register</button>
                     </form>
                     
-                    <div class="form-footer">
-                        <p style="font-size:0.85rem; color:var(--color-gray-500);">Already have an account? <button class="btn-text" id="go-login-btn">Sign In</button></p>
+                    <div style="margin: 20px 0; border-top: 1px solid var(--color-gray-400);"></div>
+                    
+                    <div class="form-footer" style="margin-top:0;">
+                        <button class="btn btn-secondary" id="go-login-btn" style="width:100%; padding:10px; font-weight:600; border:2px solid var(--color-gray-900); color:var(--color-gray-900);">Back to Login</button>
                     </div>
                 </div>
 
-                <!-- Helper panel for hackathon reviewers -->
-                <div style="margin-top: 30px; padding: 16px; background-color: var(--color-gray-50); border: 1px dashed var(--color-gray-300); border-radius: var(--radius-md); font-size: 0.775rem;">
-                    <div style="font-weight:600; color: var(--color-gray-700); margin-bottom: 6px; display:flex; align-items:center; gap:4px;">
-                        <i data-lucide="help-circle" style="width:14px; height:14px;"></i> Demo Credentials:
+                <!-- Helper Panel -->
+                <div style="margin-top: 24px; padding: 12px; background-color: var(--color-gray-50); border: 1px dashed var(--color-gray-300); border-radius: var(--radius-md); font-size: 0.725rem;">
+                    <div style="font-weight:700; color: var(--color-gray-700); margin-bottom: 4px;">Quick Credentials Helper:</div>
+                    <div style="display:grid; grid-template-columns:1fr; gap:2px; color:var(--color-gray-600);">
+                        <div>• <strong>Admin:</strong> admin@assetflow.com</div>
+                        <div>• <strong>Asset Manager:</strong> manager@assetflow.com</div>
+                        <div>• <strong>Employee:</strong> employee@assetflow.com</div>
                     </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; color:var(--color-gray-600);">
-                        <div><strong>Admin:</strong> admin@assetflow.com</div>
-                        <div><strong>Asset Manager:</strong> manager@assetflow.com</div>
-                        <div><strong>Dept Head:</strong> head@assetflow.com</div>
-                        <div><strong>Employee:</strong> employee@assetflow.com</div>
-                    </div>
-                    <div style="margin-top:8px; border-top: 1px solid var(--color-gray-200); padding-top:6px; color: var(--color-gray-500);">Password is <strong>password</strong> for all accounts.</div>
                 </div>
             </div>
         </div>
     `;
 
-    lucide.createIcons();
-
-    // Set up view toggling
+    // Toggle scripts
     const loginView = container.querySelector("#login-form-view");
     const signupView = container.querySelector("#signup-form-view");
 
@@ -106,14 +99,13 @@ export function renderLogin(container) {
         loginView.classList.remove("hidden");
     });
 
-    // Populate departments list for signup
     function loadSignupDepts() {
         const depts = Store.getDepartments().filter(d => d.status === "Active");
         const select = container.querySelector("#signup-dept");
         select.innerHTML = depts.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
     }
 
-    // Login Form Submit
+    // Signin
     container.querySelector("#login-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const email = container.querySelector("#login-email").value.trim().toLowerCase();
@@ -123,16 +115,16 @@ export function renderLogin(container) {
         const user = employees.find(emp => emp.email === email && emp.status === "Active");
 
         if (!user || user.password !== password) {
-            showToast("Invalid email or password. Please try again.", "danger");
+            showToast("Incorrect email or password.", "danger");
             return;
         }
 
         Store.setCurrentUser(user);
-        showToast(`Welcome back, ${user.name}!`, "success");
+        showToast(`Logged in as ${user.name}`, "success");
         checkAuthAndRoute();
     });
 
-    // Signup Form Submit (forces Employee role)
+    // Signup
     container.querySelector("#signup-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const name = container.querySelector("#signup-name").value.trim();
@@ -141,22 +133,19 @@ export function renderLogin(container) {
         const password = container.querySelector("#signup-password").value;
 
         const employees = Store.getEmployees();
-        
-        // Validation: email duplication
         if (employees.some(emp => emp.email === email)) {
-            showToast("Email address already registered.", "danger");
+            showToast("Email address already taken.", "danger");
             return;
         }
 
-        // Create new employee
-        const newEmpId = `EMP-${Date.now().toString().slice(-4)}`;
+        const newEmpId = `EMP-${Date.now().toString().slice(-3)}`;
         const newEmp = {
             id: newEmpId,
             name: name,
             email: email,
             password: password,
             departmentId: deptId,
-            role: "Employee", // Signup creates employee accounts ONLY
+            role: "Employee",
             status: "Active"
         };
 
@@ -166,22 +155,14 @@ export function renderLogin(container) {
         Store.logActivity(name, "Account Created", `Signed up as a new Employee.`);
         Store.addNotification("New Account Created", `${name} signed up as a new employee.`, "info");
 
-        showToast("Registration successful! You can now log in.", "success");
-        
-        // Auto fill and transition back to login
+        showToast("Registration successful!", "success");
         signupView.classList.add("hidden");
         loginView.classList.remove("hidden");
         container.querySelector("#login-email").value = email;
         container.querySelector("#login-password").value = password;
     });
 
-    // Forgot password simulation
     container.querySelector("#forgot-pw-btn").addEventListener("click", () => {
-        const email = container.querySelector("#login-email").value.trim();
-        if (!email) {
-            showToast("Please enter your email address in the email field first.", "warning");
-            return;
-        }
-        showToast(`Password recovery link sent to ${email} (Simulation)`, "info");
+        showToast("Password recovery link sent (Simulation)", "info");
     });
 }
