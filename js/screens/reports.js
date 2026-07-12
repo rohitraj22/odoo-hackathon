@@ -1,5 +1,5 @@
 /* ======================================================
-   AssetFlow - Reports & Analytics (Wireframe: Screen 9)
+   AssetFlow - Reports & Analytics (Enhanced Professional)
    ====================================================== */
 
 import { Store } from "../store.js";
@@ -8,10 +8,10 @@ export async function renderReports(container, user) {
     container.innerHTML = `
         <div class="loading-state">
             <i data-lucide="loader-2" class="spin-icon"></i>
-            <div>Loading reports...</div>
+            <div style="color:var(--color-gray-500); font-weight:600;">Loading reports...</div>
         </div>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     const [assets, allocations, maintenance, depts, employees] = await Promise.all([
         Store.fetchAssets(),
@@ -21,83 +21,124 @@ export async function renderReports(container, user) {
         Store.fetchEmployees()
     ]);
 
-    // Compute per-department utilization %
+    // Department utilization calculation
     const deptUtil = depts.map(d => {
         const emps = employees.filter(e => e.departmentId === d.id);
         const empIds = new Set(emps.map(e => e.id));
         const deptAssets = allocations.filter(a => empIds.has(a.employeeId || a.holderId) && a.status === "Active").length;
-        const totalDeptAssets = emps.length > 0 ? Math.max(deptAssets, 1) : 1;
-        const pct = Math.min(Math.round((deptAssets / Math.max(emps.length * 2, 1)) * 100), 100);
-        return { name: d.name, pct, count: deptAssets };
+        const pct = emps.length > 0 ? Math.min(Math.round((deptAssets / (emps.length * 1.5)) * 100), 100) : 0;
+        return { name: d.name, pct, count: deptAssets, employees: emps.length };
     });
 
     // Most used assets (by history events)
     const usedAssets = [...assets]
         .sort((a, b) => (b.history || []).length - (a.history || []).length)
-        .slice(0, 5);
+        .slice(0, 6);
 
     // Idle assets (Available for a long time, no allocations)
-    const idleAssets = assets
-        .filter(a => a.status === "Available")
-        .slice(0, 5);
+    const idleAssets = assets.filter(a => a.status === "Available").slice(0, 6);
 
     // Near retirement — assets older than 3 years
     const threeYearsAgo = new Date();
     threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
-    const nearRetirement = assets
-        .filter(a => a.acquisitionDate && new Date(a.acquisitionDate) < threeYearsAgo)
-        .slice(0, 5);
+    const nearRetirement = assets.filter(a => a.acquisitionDate && new Date(a.acquisitionDate) < threeYearsAgo).slice(0, 6);
 
-    // Maintenance frequency by asset (how many tickets per asset)
+    // Maintenance frequency by asset
     const maintByAsset = {};
     maintenance.forEach(m => {
         maintByAsset[m.assetId] = (maintByAsset[m.assetId] || 0) + 1;
     });
-    const maintAssets = Object.entries(maintByAsset)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5);
+    const maintAssets = Object.entries(maintByAsset).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+    // Asset status breakdown
+    const statusCounts = {
+        Available: assets.filter(a => a.status === "Available").length,
+        Allocated: assets.filter(a => a.status === "Allocated").length,
+        "Under Maintenance": assets.filter(a => a.status === "Under Maintenance").length,
+        Other: assets.filter(a => !["Available","Allocated","Under Maintenance"].includes(a.status)).length
+    };
 
     container.innerHTML = `
-        <div class="reports-wrapper">
-            <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:20px;">Reports & Analytics</h3>
+        <div class="reports-wrapper page-shell">
+            <div class="page-hero compact">
+                <div>
+                    <p class="page-eyebrow">Business intelligence</p>
+                    <h2 class="page-title">Reports & Analytics</h2>
+                    <p class="page-subtitle">Insights into asset utilization, maintenance trends, and departmental performance.</p>
+                </div>
+            </div>
 
-            <!-- Department Utilization Bar Charts -->
-            <div class="action-card" style="margin-bottom:20px;">
-                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:16px;">Department Asset Utilization</h4>
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                    ${deptUtil.map(d => `
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <span style="font-size:0.85rem; font-weight:600; color:var(--color-gray-700);">${d.name}</span>
-                                <span style="font-size:0.8rem; color:var(--color-gray-500);">${d.pct}% · ${d.count} assets</span>
-                            </div>
-                            <div style="background:var(--color-gray-200); border-radius:9999px; height:10px; overflow:hidden;">
-                                <div style="background:${d.pct > 75 ? '#10b981' : d.pct > 40 ? '#3b82f6' : '#f59e0b'}; height:100%; border-radius:9999px; width:${d.pct}%; transition:width 0.6s ease;"></div>
-                            </div>
-                        </div>
-                    `).join("")}
+            <!-- Summary KPI Cards -->
+            <div class="reports-kpi-grid">
+                <div class="report-kpi-card report-kpi-primary">
+                    <div class="report-kpi-icon"><i data-lucide="package"></i></div>
+                    <div class="report-kpi-content">
+                        <div class="report-kpi-value">${assets.length}</div>
+                        <div class="report-kpi-label">Total Assets</div>
+                    </div>
+                </div>
+                <div class="report-kpi-card report-kpi-success">
+                    <div class="report-kpi-icon"><i data-lucide="trending-up"></i></div>
+                    <div class="report-kpi-content">
+                        <div class="report-kpi-value">${allocations.filter(a => a.status === "Active").length}</div>
+                        <div class="report-kpi-label">Active Allocations</div>
+                    </div>
+                </div>
+                <div class="report-kpi-card report-kpi-warning">
+                    <div class="report-kpi-icon"><i data-lucide="wrench"></i></div>
+                    <div class="report-kpi-content">
+                        <div class="report-kpi-value">${maintenance.filter(m => m.status !== "Resolved").length}</div>
+                        <div class="report-kpi-label">Open Maintenance</div>
+                    </div>
+                </div>
+                <div class="report-kpi-card report-kpi-info">
+                    <div class="report-kpi-icon"><i data-lucide="users"></i></div>
+                    <div class="report-kpi-content">
+                        <div class="report-kpi-value">${depts.length}</div>
+                        <div class="report-kpi-label">Departments</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Charts Row -->
+            <div class="reports-charts-row">
+                <!-- Department Utilization -->
+                <div class="action-card report-chart-card">
+                    <h4 class="card-title"><i data-lucide="building-2"></i> Department Asset Utilization</h4>
+                    <div class="report-chart-container">
+                        <canvas id="deptUtilChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Asset Status Breakdown -->
+                <div class="action-card report-chart-card">
+                    <h4 class="card-title"><i data-lucide="pie-chart"></i> Asset Status Breakdown</h4>
+                    <div class="report-chart-container" style="max-height:280px;">
+                        <canvas id="assetStatusChart"></canvas>
+                    </div>
                 </div>
             </div>
 
             <!-- Maintenance Frequency -->
-            <div class="action-card" style="margin-bottom:20px;">
-                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:14px;">Maintenance Frequency (Top Assets)</h4>
+            <div class="action-card" style="margin-bottom:24px;">
+                <h4 class="card-title"><i data-lucide="alert-circle"></i> High Maintenance Assets</h4>
                 ${maintAssets.length === 0
-                    ? `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No maintenance data yet.</p>`
-                    : `<div style="display:flex; flex-direction:column; gap:10px;">
+                    ? `<div class="empty-state"><i data-lucide="check-circle"></i><p>No maintenance records yet.</p></div>`
+                    : `<div class="maint-freq-list">
                         ${maintAssets.map(([assetId, count]) => {
                             const asset = assets.find(a => a.id === assetId);
                             const maxCount = maintAssets[0][1];
                             const pct = Math.round((count / maxCount) * 100);
                             return `
-                                <div>
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
-                                        <span style="font-weight:600;">${asset ? asset.name : assetId} <span style="font-family:monospace; color:var(--color-gray-400); font-size:0.8rem;">(${assetId})</span></span>
-                                        <span style="color:var(--color-gray-500);">${count} ticket${count > 1 ? 's' : ''}</span>
+                                <div class="maint-freq-item">
+                                    <div class="maint-freq-info">
+                                        <span class="asset-tag-chip">${assetId}</span>
+                                        <span class="maint-asset-name">${asset ? asset.name : "Unknown"}</span>
                                     </div>
-                                    <div style="background:var(--color-gray-200); border-radius:9999px; height:8px; overflow:hidden;">
-                                        <div style="background:#f43f5e; height:100%; border-radius:9999px; width:${pct}%;"></div>
+                                    <div class="maint-freq-bar-wrap">
+                                        <div class="maint-freq-bar" style="width: ${pct}%;"></div>
                                     </div>
+                                    <div class="maint-freq-count">${count} ticket${count > 1 ? 's' : ''}</div>
                                 </div>
                             `;
                         }).join("")}
@@ -105,59 +146,185 @@ export async function renderReports(container, user) {
                 }
             </div>
 
-            <!-- 3-column bottom lists -->
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+            <!-- Bottom Lists Row -->
+            <div class="reports-lists-row">
                 <!-- Most Used -->
-                <div class="action-card">
-                    <h4 style="font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">Most Used Assets</h4>
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        ${usedAssets.map((a, i) => `
-                            <div style="display:flex; align-items:center; gap:10px; font-size:0.8rem;">
-                                <span style="font-size:0.75rem; font-weight:800; color:var(--color-gray-400); min-width:16px;">${i + 1}.</span>
-                                <div>
-                                    <div style="font-weight:700; color:var(--color-gray-800);">${a.name}</div>
-                                    <div style="color:var(--color-gray-400); font-family:monospace; font-size:0.75rem;">${a.id}</div>
+                <div class="action-card report-list-card">
+                    <h4 class="card-title"><i data-lucide="trending-up"></i> Most Active Assets</h4>
+                    ${usedAssets.length === 0
+                        ? `<p class="muted-text">No activity yet</p>`
+                        : `<div class="report-list">
+                            ${usedAssets.map((a, i) => `
+                                <div class="report-list-item">
+                                    <div class="report-list-rank">${i + 1}</div>
+                                    <div class="report-list-content">
+                                        <div class="report-list-title">${a.name}</div>
+                                        <div class="report-list-meta"><span class="asset-tag-chip">${a.id}</span> · ${(a.history || []).length} events</div>
+                                    </div>
                                 </div>
-                            </div>
-                        `).join("")}
-                        ${usedAssets.length === 0 ? `<p style="color:var(--color-gray-400); font-size:0.8rem; text-align:center; padding:12px;">No data</p>` : ''}
-                    </div>
+                            `).join("")}
+                        </div>`
+                    }
                 </div>
 
                 <!-- Idle Assets -->
-                <div class="action-card">
-                    <h4 style="font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">Idle Assets</h4>
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        ${idleAssets.map(a => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding:6px 8px; background:var(--color-gray-50); border-radius:var(--radius-sm); border:1px solid var(--color-gray-100);">
-                                <div>
-                                    <div style="font-weight:700; color:var(--color-gray-800);">${a.name}</div>
-                                    <div style="color:var(--color-gray-400); font-family:monospace; font-size:0.75rem;">${a.id}</div>
+                <div class="action-card report-list-card">
+                    <h4 class="card-title"><i data-lucide="archive"></i> Idle Assets</h4>
+                    ${idleAssets.length === 0
+                        ? `<p class="muted-text">All assets utilized</p>`
+                        : `<div class="report-list">
+                            ${idleAssets.map(a => `
+                                <div class="report-list-item">
+                                    <div class="report-list-icon idle"><i data-lucide="pause"></i></div>
+                                    <div class="report-list-content">
+                                        <div class="report-list-title">${a.name}</div>
+                                        <div class="report-list-meta"><span class="asset-tag-chip">${a.id}</span> · ${a.location || "—"}</div>
+                                    </div>
                                 </div>
-                                <span class="badge badge-available" style="font-size:0.65rem;">Free</span>
-                            </div>
-                        `).join("")}
-                        ${idleAssets.length === 0 ? `<p style="color:var(--color-gray-400); font-size:0.8rem; text-align:center; padding:12px;">None</p>` : ''}
-                    </div>
+                            `).join("")}
+                        </div>`
+                    }
                 </div>
 
                 <!-- Near Retirement -->
-                <div class="action-card">
-                    <h4 style="font-size:0.875rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">Near Retirement (3+ yrs)</h4>
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        ${nearRetirement.map(a => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding:6px 8px; background:#fff7ed; border-radius:var(--radius-sm); border:1px solid #fed7aa;">
-                                <div>
-                                    <div style="font-weight:700; color:var(--color-gray-800);">${a.name}</div>
-                                    <div style="color:var(--color-gray-400); font-size:0.75rem;">${a.acquisitionDate}</div>
+                <div class="action-card report-list-card">
+                    <h4 class="card-title"><i data-lucide="calendar-clock"></i> Near Retirement</h4>
+                    ${nearRetirement.length === 0
+                        ? `<p class="muted-text">No aging assets</p>`
+                        : `<div class="report-list">
+                            ${nearRetirement.map(a => {
+                                const age = Math.floor((new Date() - new Date(a.acquisitionDate)) / (1000 * 60 * 60 * 24 * 365));
+                                return `
+                                <div class="report-list-item">
+                                    <div class="report-list-icon warning"><i data-lucide="alert-triangle"></i></div>
+                                    <div class="report-list-content">
+                                        <div class="report-list-title">${a.name}</div>
+                                        <div class="report-list-meta"><span class="asset-tag-chip">${a.id}</span> · ${age} years old</div>
+                                    </div>
                                 </div>
-                                <span style="font-size:0.7rem; font-weight:700; color:#c2410c;">⚠ Old</span>
-                            </div>
-                        `).join("")}
-                        ${nearRetirement.length === 0 ? `<p style="color:var(--color-gray-400); font-size:0.8rem; text-align:center; padding:12px;">None flagged</p>` : ''}
-                    </div>
+                            `;}).join("")}
+                        </div>`
+                    }
                 </div>
             </div>
         </div>
     `;
+
+    safeCreateIcons();
+
+    // Render charts after DOM is ready
+    setTimeout(() => {
+        renderDepartmentUtilizationChart(deptUtil);
+        renderAssetStatusChart(statusCounts);
+    }, 100);
+}
+
+function renderDepartmentUtilizationChart(data) {
+    const canvas = document.getElementById("deptUtilChart");
+    if (!canvas) return;
+
+    const labels = data.map(d => d.name);
+    const values = data.map(d => d.pct);
+    const colors = values.map(v => v > 75 ? "#10b981" : v > 40 ? "#3b82f6" : "#f59e0b");
+
+    new Chart(canvas, {
+        type: "bar",
+        data: {
+            labels,
+            datasets: [{
+                label: "Utilization %",
+                data: values,
+                backgroundColor: colors.map(c => c + "cc"),
+                borderColor: colors,
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.raw}% utilized`
+                    },
+                    backgroundColor: "#1f2937",
+                    titleColor: "#fff",
+                    bodyColor: "#9ca3af",
+                    padding: 12,
+                    cornerRadius: 10
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: v => v + "%",
+                        color: "#9ca3af",
+                        font: { size: 11 }
+                    },
+                    grid: { color: "rgba(0,0,0,0.04)" }
+                },
+                x: {
+                    ticks: { color: "#6b7280", font: { size: 11, weight: "600" } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+function renderAssetStatusChart(data) {
+    const canvas = document.getElementById("assetStatusChart");
+    if (!canvas) return;
+
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    const colors = ["#10b981", "#3b82f6", "#f59e0b", "#e5e7eb"];
+
+    new Chart(canvas, {
+        type: "doughnut",
+        data: {
+            labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderColor: "#ffffff",
+                borderWidth: 3,
+                hoverBorderWidth: 4,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: "70%",
+            plugins: {
+                legend: {
+                    display: true,
+                    position: "bottom",
+                    labels: {
+                        color: "#6b7280",
+                        font: { size: 12, weight: "600" },
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: "circle"
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.label}: ${ctx.raw} assets`
+                    },
+                    backgroundColor: "#1f2937",
+                    titleColor: "#fff",
+                    bodyColor: "#9ca3af",
+                    padding: 12,
+                    cornerRadius: 10
+                }
+            }
+        }
+    });
 }

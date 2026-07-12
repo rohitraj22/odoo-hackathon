@@ -19,7 +19,7 @@ let pageEmployees = [];
 
 export async function renderMaintenance(container, user) {
     container.innerHTML = `<div class="loading-state"><i data-lucide="loader-2" class="spin-icon"></i><div>Loading maintenance...</div></div>`;
-    lucide.createIcons();
+    safeCreateIcons();
 
     [pageTickets, pageAssets, pageEmployees] = await Promise.all([
         Store.fetchMaintenance(),
@@ -56,7 +56,7 @@ export async function renderMaintenance(container, user) {
 
     container.querySelector("#trigger-maintenance-btn").addEventListener("click", () => openMaintenanceModal(user));
     renderKanbanCards(user);
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 function renderKanbanCards(user) {

@@ -17,7 +17,7 @@ export async function renderAssets(container, user) {
         </div>
         <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     [pageAssets, pageCategories, pageDepts] = await Promise.all([
         Store.fetchAssets(),
@@ -95,7 +95,7 @@ export async function renderAssets(container, user) {
         if (btn) openAssetDrawer(btn.dataset.id);
     });
 
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 function statusBadgeClass(status) {
@@ -131,7 +131,7 @@ function filterAssets() {
 
     if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i data-lucide="package-search"></i><p>No assets match your filters.</p></div></td></tr>`;
-        lucide.createIcons();
+        safeCreateIcons();
         return;
     }
 
@@ -151,7 +151,7 @@ function filterAssets() {
         `;
     }).join("");
 
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 function openRegisterModal(user) {

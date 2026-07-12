@@ -8,12 +8,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Chart.js for analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons CDN -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js - pinned version -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <!-- Lucide Icons - pinned stable version -->
+    <script src="https://unpkg.com/lucide@0.400.0/dist/umd/lucide.min.js"></script>
     <!-- Custom Style -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Safety wrapper: ensure lucide is always callable -->
+    <script>
+        window.__lucideReady = false;
+        window.addEventListener('load', function() {
+            window.__lucideReady = true;
+            if (window.lucide && window.lucide.createIcons) {
+                window.lucide.createIcons();
+            }
+        });
+        // Safe createIcons wrapper
+        window.safeCreateIcons = function() {
+            try {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            } catch(e) {
+                // silently ignore icon failures
+            }
+        };
+    </script>
 </head>
 <body>
     <!-- App Container -->
@@ -135,8 +155,9 @@
                         <!-- User Session Dropdown -->
                         <div class="user-dropdown-container">
                             <button class="btn-profile" id="user-profile-btn">
+                                <div class="profile-avatar-mini" id="header-user-avatar">JD</div>
                                 <span class="profile-name" id="header-user-name">John Doe</span>
-                                <i data-lucide="chevron-down"></i>
+                                <i data-lucide="chevron-down" style="width:16px; height:16px;"></i>
                             </button>
                             <div class="user-dropdown hidden" id="user-dropdown">
                                 <div class="dropdown-user-details">
@@ -144,7 +165,6 @@
                                     <div class="email" id="dropdown-email">john@example.com</div>
                                     <div class="dept" id="dropdown-dept">Department: IT</div>
                                 </div>
-                                <hr>
                                 <button class="btn-dropdown-item text-danger" id="logout-btn">
                                     <i data-lucide="log-out"></i> Logout
                                 </button>

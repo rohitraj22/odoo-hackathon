@@ -98,8 +98,8 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="login-email">Email Address</label>
                                 <div class="input-icon-container">
-                                    <input type="email" id="login-email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                                     <i data-lucide="mail" class="field-icon"></i>
+                                    <input type="email" id="login-email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -108,8 +108,8 @@ export function renderLogin(container) {
                                     <button type="button" class="btn-text" id="forgot-pw-btn" style="font-size:0.775rem;">Forgot password?</button>
                                 </div>
                                 <div class="input-icon-container">
-                                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
+                                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password" required style="padding-right: 44px;">
                                     <button type="button" class="password-toggle-btn" data-target="login-password">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                                     </button>
@@ -134,29 +134,29 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="signup-name">Full Name</label>
                                 <div class="input-icon-container">
-                                    <input type="text" id="signup-name" class="form-control" placeholder="Jane Doe" required>
                                     <i data-lucide="user" class="field-icon"></i>
+                                    <input type="text" id="signup-name" class="form-control" placeholder="Jane Doe" required>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="signup-email">Email Address</label>
                                 <div class="input-icon-container">
-                                    <input type="email" id="signup-email" class="form-control" placeholder="jane.doe@company.com" required>
                                     <i data-lucide="mail" class="field-icon"></i>
+                                    <input type="email" id="signup-email" class="form-control" placeholder="jane.doe@company.com" required>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="signup-dept">Department</label>
                                 <div class="input-icon-container">
-                                    <select id="signup-dept" class="form-control" required style="padding-left: 44px;"></select>
                                     <i data-lucide="building-2" class="field-icon"></i>
+                                    <select id="signup-dept" class="form-control" required></select>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="signup-password">Password</label>
                                 <div class="input-icon-container">
-                                    <input type="password" id="signup-password" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
+                                    <input type="password" id="signup-password" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <button type="button" class="password-toggle-btn" data-target="signup-password">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                                     </button>
@@ -201,8 +201,8 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="forgot-email">Email Address</label>
                                 <div class="input-icon-container">
-                                    <input type="email" id="forgot-email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                                     <i data-lucide="mail" class="field-icon"></i>
+                                    <input type="email" id="forgot-email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Send Recovery Code</button>
@@ -224,8 +224,8 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="otp-code">Verification Code</label>
                                 <div class="input-icon-container">
-                                    <input type="text" id="otp-code" class="form-control" placeholder="123456" maxlength="6" pattern="\\d{6}" style="text-align: center; letter-spacing: 4px; font-size: 1.25rem;" required>
                                     <i data-lucide="shield-check" class="field-icon"></i>
+                                    <input type="text" id="otp-code" class="form-control" placeholder="123456" maxlength="6" pattern="\\d{6}" style="text-align: center; letter-spacing: 4px; font-size: 1.25rem;" required>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Verify Code</button>
@@ -247,8 +247,8 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="reset-password">New Password</label>
                                 <div class="input-icon-container">
-                                    <input type="password" id="reset-password" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
+                                    <input type="password" id="reset-password" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <button type="button" class="password-toggle-btn" data-target="reset-password">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                                     </button>
@@ -257,8 +257,8 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="reset-password-confirm">Confirm Password</label>
                                 <div class="input-icon-container">
-                                    <input type="password" id="reset-password-confirm" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
+                                    <input type="password" id="reset-password-confirm" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <button type="button" class="password-toggle-btn" data-target="reset-password-confirm">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
                                     </button>
@@ -275,7 +275,7 @@ export function renderLogin(container) {
         </div>
     `;
 
-    lucide.createIcons();
+    safeCreateIcons();
 
     // Select Views
     const loginView = container.querySelector("#login-form-view");
@@ -288,7 +288,7 @@ export function renderLogin(container) {
     function showView(targetView) {
         [loginView, signupView, forgotView, otpView, resetView].forEach(v => v.classList.add("hidden"));
         targetView.classList.remove("hidden");
-        lucide.createIcons();
+        safeCreateIcons();
     }
 
     // View Navigation triggers
@@ -340,7 +340,7 @@ export function renderLogin(container) {
                 input.type = "password";
                 icon.setAttribute("data-lucide", "eye");
             }
-            lucide.createIcons();
+            safeCreateIcons();
         });
     });
 
@@ -400,7 +400,7 @@ export function renderLogin(container) {
             item.classList.remove("met");
             icon.setAttribute("data-lucide", "circle");
         }
-        lucide.createIcons();
+        safeCreateIcons();
     }
 
     // Login Form Submit
