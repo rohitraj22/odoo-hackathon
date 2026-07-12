@@ -70,16 +70,35 @@ export function renderLogin(container) {
 
                     <!-- 1. LOGIN VIEW -->
                     <div id="login-form-view" class="auth-view-fade">
+                        <div class="auth-eyebrow">
+                            <i data-lucide="shield-check" style="width:14px; height:14px;"></i>
+                            Private workspace access
+                        </div>
                         <div class="auth-header">
                             <h2>Welcome back</h2>
-                            <p>Access your organization's AssetFlow dashboard</p>
+                            <p>Sign in to manage assets, allocations, bookings, and maintenance in one place.</p>
+                        </div>
+
+                        <div class="auth-login-strip">
+                            <div class="auth-login-pill">
+                                <strong>Employee account</strong>
+                                <span>Use your organization email to continue.</span>
+                            </div>
+                            <div class="auth-login-pill">
+                                <strong>Fast recovery</strong>
+                                <span>Reset access without leaving the screen.</span>
+                            </div>
+                            <div class="auth-login-pill">
+                                <strong>Role aware</strong>
+                                <span>Different workspaces open after sign in.</span>
+                            </div>
                         </div>
                         
                         <form id="login-form">
                             <div class="form-group">
                                 <label for="login-email">Email Address</label>
                                 <div class="input-icon-container">
-                                    <input type="email" id="login-email" class="form-control" placeholder="name@company.com" required value="employee@assetflow.com">
+                                    <input type="email" id="login-email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                                     <i data-lucide="mail" class="field-icon"></i>
                                 </div>
                             </div>
@@ -89,7 +108,7 @@ export function renderLogin(container) {
                                     <button type="button" class="btn-text" id="forgot-pw-btn" style="font-size:0.775rem;">Forgot password?</button>
                                 </div>
                                 <div class="input-icon-container">
-                                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" required value="password">
+                                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
                                     <button type="button" class="password-toggle-btn" data-target="login-password">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
@@ -100,7 +119,7 @@ export function renderLogin(container) {
                         </form>
                         
                         <div class="form-footer">
-                            <p style="font-size:0.85rem; color:var(--color-gray-500);">Don't have an account? <button class="btn-text" id="go-signup-btn" style="font-weight: 600;">Create Employee Account</button></p>
+                            <p style="font-size:0.85rem; color:var(--color-gray-500);">Don't have an account? <button class="btn-text" id="go-signup-btn" style="font-weight: 600;">Create account</button></p>
                         </div>
                     </div>
 
@@ -136,7 +155,7 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="signup-password">Password</label>
                                 <div class="input-icon-container">
-                                    <input type="password" id="signup-password" class="form-control" placeholder="••••••••" required>
+                                    <input type="password" id="signup-password" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
                                     <button type="button" class="password-toggle-btn" data-target="signup-password">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
@@ -182,7 +201,7 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="forgot-email">Email Address</label>
                                 <div class="input-icon-container">
-                                    <input type="email" id="forgot-email" class="form-control" placeholder="name@company.com" required>
+                                    <input type="email" id="forgot-email" class="form-control" placeholder="name@company.com" autocomplete="email" required>
                                     <i data-lucide="mail" class="field-icon"></i>
                                 </div>
                             </div>
@@ -208,9 +227,6 @@ export function renderLogin(container) {
                                     <input type="text" id="otp-code" class="form-control" placeholder="123456" maxlength="6" pattern="\\d{6}" style="text-align: center; letter-spacing: 4px; font-size: 1.25rem;" required>
                                     <i data-lucide="shield-check" class="field-icon"></i>
                                 </div>
-                                <span style="font-size: 0.775rem; color: var(--color-gray-500); margin-top: 6px; display: block; text-align: center;">
-                                    Demo Code is <strong>123456</strong>
-                                </span>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Verify Code</button>
                         </form>
@@ -231,7 +247,7 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="reset-password">New Password</label>
                                 <div class="input-icon-container">
-                                    <input type="password" id="reset-password" class="form-control" placeholder="••••••••" required>
+                                    <input type="password" id="reset-password" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
                                     <button type="button" class="password-toggle-btn" data-target="reset-password">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
@@ -241,7 +257,7 @@ export function renderLogin(container) {
                             <div class="form-group">
                                 <label for="reset-password-confirm">Confirm Password</label>
                                 <div class="input-icon-container">
-                                    <input type="password" id="reset-password-confirm" class="form-control" placeholder="••••••••" required>
+                                    <input type="password" id="reset-password-confirm" class="form-control" placeholder="••••••••" autocomplete="new-password" required>
                                     <i data-lucide="lock" class="field-icon"></i>
                                     <button type="button" class="password-toggle-btn" data-target="reset-password-confirm">
                                         <i data-lucide="eye" style="width: 16px; height: 16px;"></i>
@@ -251,19 +267,8 @@ export function renderLogin(container) {
                             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Reset Password</button>
                         </form>
                     </div>
-
-                    <!-- Helper panel for hackathon reviewers -->
-                    <div style="margin-top: 24px; padding: 16px; background-color: var(--color-gray-50); border: 1px dashed var(--color-gray-200); border-radius: var(--radius-md); font-size: 0.775rem;">
-                        <div style="font-weight:600; color: var(--color-gray-700); margin-bottom: 6px; display:flex; align-items:center; gap:6px;">
-                            <i data-lucide="help-circle" style="width:14px; height:14px; color: var(--color-primary)"></i> Demo Credentials:
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; color:var(--color-gray-600);">
-                            <div><strong>Admin:</strong> admin@assetflow.com</div>
-                            <div><strong>Asset Manager:</strong> manager@assetflow.com</div>
-                            <div><strong>Dept Head:</strong> head@assetflow.com</div>
-                            <div><strong>Employee:</strong> employee@assetflow.com</div>
-                        </div>
-                        <div style="margin-top:8px; border-top: 1px solid var(--color-gray-200); padding-top:6px; color: var(--color-gray-500);">Password is <strong>password</strong> for all accounts.</div>
+                    <div class="auth-support-note">
+                        Use your organization email to sign in. If you are new, create an employee account from the form below and your access will be stored locally for this workspace.
                     </div>
                 </div>
             </div>
@@ -310,6 +315,13 @@ export function renderLogin(container) {
     function loadSignupDepts() {
         const depts = Store.getDepartments().filter(d => d.status === "Active");
         const select = container.querySelector("#signup-dept");
+        if (depts.length === 0) {
+            select.innerHTML = `<option value="">No departments available</option>`;
+            select.disabled = true;
+            return;
+        }
+
+        select.disabled = false;
         select.innerHTML = depts.map(d => `<option value="${d.id}">${d.name}</option>`).join("");
     }
 
@@ -397,17 +409,17 @@ export function renderLogin(container) {
         const email = container.querySelector("#login-email").value.trim().toLowerCase();
         const password = container.querySelector("#login-password").value;
 
-        const employees = Store.getEmployees();
-        const user = employees.find(emp => emp.email === email && emp.status === "Active");
+        Store.login(email, password).then(result => {
+            if (!result.success) {
+                showToast(result.message || "Invalid email or password. Please try again.", "danger");
+                return;
+            }
 
-        if (!user || user.password !== password) {
-            showToast("Invalid email or password. Please try again.", "danger");
-            return;
-        }
-
-        Store.setCurrentUser(user);
-        showToast(`Welcome back, ${user.name}!`, "success");
-        checkAuthAndRoute();
+            const user = result.data.user || result.data;
+            Store.setCurrentUser(user);
+            showToast(`Welcome back, ${user.name}!`, "success");
+            checkAuthAndRoute();
+        });
     });
 
     // Signup Form Submit (forces Employee role)
@@ -418,38 +430,25 @@ export function renderLogin(container) {
         const deptId = container.querySelector("#signup-dept").value;
         const password = signupPwInput.value;
 
-        const employees = Store.getEmployees();
-        
-        // Validation: email duplication
-        if (employees.some(emp => emp.email === email)) {
-            showToast("Email address already registered.", "danger");
-            return;
-        }
+        Store.signup({
+            name,
+            email,
+            department_id: deptId,
+            password
+        }).then(result => {
+            if (!result.success) {
+                showToast(result.message || "Email address already registered.", "danger");
+                return;
+            }
 
-        // Create new employee
-        const newEmpId = `EMP-${Date.now().toString().slice(-4)}`;
-        const newEmp = {
-            id: newEmpId,
-            name: name,
-            email: email,
-            password: password,
-            departmentId: deptId,
-            role: "Employee", // Signup creates employee accounts ONLY
-            status: "Active"
-        };
+            Store.logActivity(name, "Account Created", `Signed up as a new Employee.`).catch(() => {});
+            Store.addNotification("New Account Created", `${name} signed up as a new employee.`, "info").catch(() => {});
 
-        employees.push(newEmp);
-        Store.saveEmployees(employees);
-
-        Store.logActivity(name, "Account Created", `Signed up as a new Employee.`);
-        Store.addNotification("New Account Created", `${name} signed up as a new employee.`, "info");
-
-        showToast("Registration successful! You can now log in.", "success");
-        
-        // Auto fill and transition back to login
-        showView(loginView);
-        container.querySelector("#login-email").value = email;
-        container.querySelector("#login-password").value = password;
+            showToast("Registration successful! You can now log in.", "success");
+            showView(loginView);
+            container.querySelector("#login-email").value = email;
+            container.querySelector("#login-password").value = password;
+        });
     });
 
     // Forgot Password Request Submit
@@ -507,25 +506,18 @@ export function renderLogin(container) {
             return;
         }
 
-        // Update employee record password in store
-        const employees = Store.getEmployees();
-        const userIndex = employees.findIndex(emp => emp.email === recoveryEmail && emp.status === "Active");
+        Store.resetPassword(recoveryEmail, newPassword).then(result => {
+            if (!result.success) {
+                showToast(result.message || "Unable to update password.", "danger");
+                showView(loginView);
+                return;
+            }
 
-        if (userIndex === -1) {
-            showToast("User session mismatch error.", "danger");
+            Store.logActivity(recoveryEmail, "Password Reset", "Password was reset via forgot password screen.").catch(() => {});
+            showToast("Password updated successfully! Please log in.", "success");
             showView(loginView);
-            return;
-        }
-
-        employees[userIndex].password = newPassword;
-        Store.saveEmployees(employees);
-
-        Store.logActivity(employees[userIndex].name, "Password Reset", "Password was reset via forgot password screen.");
-        showToast("Password updated successfully! Please log in.", "success");
-
-        // Back to Login with fields pre-filled
-        showView(loginView);
-        container.querySelector("#login-email").value = recoveryEmail;
-        container.querySelector("#login-password").value = newPassword;
+            container.querySelector("#login-email").value = recoveryEmail;
+            container.querySelector("#login-password").value = newPassword;
+        });
     });
 }

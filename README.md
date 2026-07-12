@@ -79,15 +79,6 @@ Since the project uses ES Modules, it requires a local web server to avoid CORS 
 
 ---
 
-## 🔑 Prototype Demo Credentials
+## 🔑 Starter Access
 
-The database is pre-seeded with these credentials for testing. Password is **`password`** for all accounts.
-
-| Role | Email | Name |
-| :--- | :--- | :--- |
-| **Admin** | `admin@assetflow.com` | System Admin |
-| **Asset Manager** | `manager@assetflow.com` | Priya Sharma |
-| **Department Head** | `head@assetflow.com` | Raj Patel |
-| **Employee** | `employee@assetflow.com` | John Doe |
-
-> 💡 **Tip**: Use the **Prototype Tester Panel** at the bottom-right of the dashboard screen to switch active roles instantly without logging out.
+The workspace includes local starter accounts and seed data for testing the full flow without any manual setup. You can create additional employee accounts directly from the login screen, and the data will persist in the browser.

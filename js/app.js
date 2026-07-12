@@ -1,5 +1,5 @@
 /* ===================================================
-   AssetFlow Core App Router & Shell Orchestrator
+   AssetFlow Core App Router & Shell Orchestrator (Async)
    =================================================== */
 
 import { Store } from "./store.js";
@@ -39,31 +39,27 @@ function initApp() {
 }
 
 // 1. Core Auth Routing
-export function checkAuthAndRoute() {
+export async function checkAuthAndRoute() {
     const user = localStorage.getItem("assetflow_current_user");
     
     const authContainer = document.getElementById("auth-container");
     const mainShell = document.getElementById("main-shell");
 
     if (!user) {
-        // Render login page
         authContainer.classList.remove("hidden");
         mainShell.classList.add("hidden");
         renderLogin(authContainer);
     } else {
-        // User logged in, render main shell
         authContainer.classList.add("hidden");
         mainShell.classList.remove("hidden");
         
         const currentUser = Store.getCurrentUser();
-        updateUIForUser(currentUser);
+        await updateUIForUser(currentUser); 
         
-        // Match path/hash
         const hash = window.location.hash.replace("#", "") || "dashboard";
         routeTo(hash);
     }
     
-    // Update notifications badge in header
     updateNotificationBadge();
 }
 
@@ -74,14 +70,12 @@ export function routeTo(screenName) {
         return;
     }
 
-    // Role security check
     if (screenName === "setup" && user.role !== "Admin") {
         showToast("Access Denied: Only Administrators can access Setup.", "danger");
         window.location.hash = "#dashboard";
         return;
     }
 
-    // Clear active links and set new one
     document.querySelectorAll(".nav-link").forEach(link => {
         link.classList.remove("active");
         if (link.dataset.screen === screenName) {
@@ -89,7 +83,6 @@ export function routeTo(screenName) {
         }
     });
 
-    // Update Page Title
     const titleMap = {
         "dashboard": "Dashboard",
         "setup": "Organization Master Setup",
@@ -103,38 +96,42 @@ export function routeTo(screenName) {
     };
     document.getElementById("page-title").textContent = titleMap[screenName] || "AssetFlow";
 
-    // Call Screen Render function
     const renderFn = routes[screenName] || renderDashboard;
     const viewport = document.getElementById("content-viewport");
     
-    // Fade out effect
     viewport.style.opacity = 0;
-    setTimeout(() => {
-        renderFn(viewport, user);
-        viewport.style.opacity = 1;
-        lucide.createIcons();
+    
+    // ASYNC RENDER TIMEOUT
+    setTimeout(async () => {
+        try {
+            await renderFn(viewport, user); 
+            viewport.style.opacity = 1;
+            lucide.createIcons();
+        } catch (error) {
+            console.error("Screen failed to render:", error);
+            viewport.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--color-danger);">Failed to load module. Check console.</div>`;
+            viewport.style.opacity = 1;
+        }
     }, 100);
 }
 
 // 2. Shell Actions & Header Details
-function updateUIForUser(user) {
-    // Set Sidebar profile details
+async function updateUIForUser(user) {
     document.getElementById("sidebar-user-name").textContent = user.name;
     document.getElementById("sidebar-user-role").textContent = user.role;
     
     const initials = user.name.split(" ").map(n => n[0]).join("").slice(0, 2);
     document.getElementById("sidebar-user-avatar").textContent = initials;
 
-    // Set Header profile details
     document.getElementById("header-user-name").textContent = user.name;
     document.getElementById("dropdown-full-name").textContent = user.name;
     document.getElementById("dropdown-email").textContent = user.email;
     
-    const depts = Store.getDepartments();
+    // FETCH DEPARTMENTS FROM BACKEND
+    const depts = await Store.fetchDepartments();
     const userDept = depts.find(d => d.id === user.departmentId);
     document.getElementById("dropdown-dept").textContent = `Department: ${userDept ? userDept.name : "Unassigned"}`;
 
-    // Admin constraints: hide Setup navigation tab for non-admins
     const adminNavItems = document.querySelectorAll(".admin-only");
     if (user.role === "Admin") {
         adminNavItems.forEach(item => item.classList.remove("hidden"));
@@ -145,13 +142,11 @@ function updateUIForUser(user) {
 
 // 3. Global Interactions (Sidebar, Drawers, Modals, Toasts)
 function setupGlobalDOMEvents() {
-    // Hash Routing listener
     window.addEventListener("hashchange", () => {
         const hash = window.location.hash.replace("#", "") || "dashboard";
         routeTo(hash);
     });
 
-    // Sidebar navigation clicks
     document.querySelectorAll(".nav-link").forEach(link => {
         link.addEventListener("click", (e) => {
             const screen = link.dataset.screen;
@@ -162,7 +157,6 @@ function setupGlobalDOMEvents() {
         });
     });
 
-    // Profile Dropdown Toggle
     const profileBtn = document.getElementById("user-profile-btn");
     const userDropdown = document.getElementById("user-dropdown");
     profileBtn.addEventListener("click", (e) => {
@@ -171,7 +165,6 @@ function setupGlobalDOMEvents() {
         document.getElementById("notification-dropdown").classList.add("hidden");
     });
 
-    // Notifications Dropdown Toggle
     const bellBtn = document.getElementById("notification-bell-btn");
     const notificationsDropdown = document.getElementById("notification-dropdown");
     bellBtn.addEventListener("click", (e) => {
@@ -181,28 +174,23 @@ function setupGlobalDOMEvents() {
         renderNotificationsDropdown();
     });
 
-    // Clear dropdowns when clicking outside
     document.addEventListener("click", () => {
         userDropdown.classList.add("hidden");
         notificationsDropdown.classList.add("hidden");
     });
 
-    // Logout Action
     document.getElementById("logout-btn").addEventListener("click", () => {
         localStorage.removeItem("assetflow_current_user");
         checkAuthAndRoute();
         showToast("Logged out successfully.", "info");
     });
 
-    // Drawer Close
     document.getElementById("drawer-close-btn").addEventListener("click", closeDrawer);
     document.getElementById("drawer-overlay").addEventListener("click", closeDrawer);
 
-    // Modal Close
     document.getElementById("modal-close-btn").addEventListener("click", closeModal);
     document.getElementById("modal-overlay").addEventListener("click", closeModal);
 
-    // Mobile Sidebar Toggle
     const sidebarToggle = document.getElementById("sidebar-toggle-btn");
     const sidebar = document.querySelector(".sidebar");
     sidebarToggle.addEventListener("click", (e) => {
@@ -216,43 +204,48 @@ function setupGlobalDOMEvents() {
         }
     });
 
-    // Notification dropdown clear all button
     document.getElementById("noti-clear-all").addEventListener("click", (e) => {
         e.stopPropagation();
+        // Skip backend migration for notifications for now, keep local
         Store.saveNotifications([]);
         updateNotificationBadge();
         renderNotificationsDropdown();
         showToast("Notifications cleared.", "info");
         
-        // Re-render current viewport if it is the logs screen
         const hash = window.location.hash.replace("#", "") || "dashboard";
-        if (hash === "logs") {
-            routeTo("logs");
-        }
+        if (hash === "logs") routeTo("logs");
     });
 
-    // Listen for new notifications to update badge dynamically
     window.addEventListener("new-notification", () => {
         updateNotificationBadge();
     });
 }
 
 // 4. Notification Dropdown Helpers
-function updateNotificationBadge() {
+async function updateNotificationBadge() {
     const badge = document.getElementById("noti-badge-count");
-    const notis = Store.getNotifications().filter(n => !n.read);
+    const currentUser = Store.getCurrentUser();
+
+    if (!badge || !currentUser) {
+        if (badge) badge.classList.add("hidden");
+        return;
+    }
+
+    const notis = (await Store.fetchNotifications ? await Store.fetchNotifications(currentUser.id) : []) || [];
+    const unread = notis.filter(n => !n.read);
     
-    if (notis.length > 0) {
-        badge.textContent = notis.length;
+    if (unread.length > 0) {
+        badge.textContent = unread.length;
         badge.classList.remove("hidden");
     } else {
         badge.classList.add("hidden");
     }
 }
 
-function renderNotificationsDropdown() {
+async function renderNotificationsDropdown() {
     const list = document.getElementById("noti-dropdown-list");
-    const notis = Store.getNotifications();
+    const currentUser = Store.getCurrentUser();
+    const notis = (await Store.fetchNotifications && currentUser ? await Store.fetchNotifications(currentUser.id) : []) || [];
     
     if (notis.length === 0) {
         list.innerHTML = `<div class="empty-state" style="padding: 24px; text-align: center; color: var(--color-gray-400); font-size: 0.85rem;">No new notifications</div>`;
@@ -267,15 +260,9 @@ function renderNotificationsDropdown() {
             <div class="noti-content" style="flex:1;">
                 <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 2px;">${n.title}</h4>
                 <p style="font-size: 0.775rem; color: var(--color-gray-600); line-height: 1.3;">${n.message}</p>
-                <span style="font-size: 0.7rem; color: var(--color-gray-400); margin-top: 4px; display: inline-block;">${new Date(n.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
         </div>
     `).join("");
-    
-    // Mark as read when opening dropdown
-    notis.forEach(n => n.read = true);
-    Store.saveNotifications(notis);
-    updateNotificationBadge();
     
     lucide.createIcons();
 }
@@ -284,10 +271,8 @@ function renderNotificationsDropdown() {
 export function openDrawer(title, htmlContent) {
     document.getElementById("drawer-title").textContent = title;
     document.getElementById("drawer-body").innerHTML = htmlContent;
-    
     document.getElementById("drawer-overlay").classList.remove("hidden");
     document.getElementById("drawer-panel").classList.remove("hidden");
-    
     lucide.createIcons();
 }
 
@@ -312,8 +297,10 @@ export function openModal(title, htmlContent, onConfirm, confirmText = "Confirm"
     document.getElementById("modal-container").classList.remove("hidden");
 
     document.getElementById("modal-cancel-btn-action").addEventListener("click", closeModal);
-    document.getElementById("modal-confirm-btn-action").addEventListener("click", () => {
-        if (onConfirm()) {
+    document.getElementById("modal-confirm-btn-action").addEventListener("click", async () => {
+        // Now supports async confirmations
+        const result = await onConfirm();
+        if (result) {
             closeModal();
         }
     });
@@ -326,7 +313,6 @@ export function closeModal() {
     document.getElementById("modal-container").classList.add("hidden");
 }
 
-// 6. Global Toast Notifications
 export function showToast(message, type = "success") {
     const container = document.getElementById("toast-container");
     const toast = document.createElement("div");
@@ -349,17 +335,18 @@ export function showToast(message, type = "success") {
 
     setTimeout(() => {
         toast.style.animation = "toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards";
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
+        setTimeout(() => toast.remove(), 300);
     }, 4000);
 }
 
-// 7. Role Switcher for hackathon/testing
+// 7. Role Switcher (Async Updated)
 function setupRoleSwitcher() {
     const toggleBtn = document.getElementById("toggle-switcher-btn");
-    const body = document.getElementById("switcher-body");
     const panel = document.getElementById("role-switcher-panel");
+
+    if (!toggleBtn || !panel) {
+        return;
+    }
 
     toggleBtn.addEventListener("click", () => {
         panel.classList.toggle("collapsed");
@@ -370,30 +357,29 @@ function setupRoleSwitcher() {
 
     const switcherBtns = document.querySelectorAll(".btn-switcher");
     switcherBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             const role = btn.dataset.role;
-            const employees = Store.getEmployees();
             
-            // Find employee matching target role
+            // FETCH EMPLOYEES FROM BACKEND
+            const employees = await Store.fetchEmployees();
+            
             const targetUser = employees.find(e => e.role === role);
-            if (!targetUser) return;
+            if (!targetUser) {
+                showToast(`No mock user found for role: ${role}`, "warning");
+                return;
+            }
 
-            // Update session
             Store.setCurrentUser(targetUser);
             
-            // Visual Active States
             switcherBtns.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
             document.getElementById("switcher-active-role").textContent = role;
 
             showToast(`Switched active workspace view to: ${targetUser.name} (${role})`, "info");
-            
-            // Reload routing UI
             checkAuthAndRoute();
         });
     });
 
-    // Make sure correct switcher button is active on load
     const activeUser = Store.getCurrentUser();
     if (activeUser) {
         switcherBtns.forEach(btn => {

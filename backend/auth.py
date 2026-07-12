@@ -1,9 +1,9 @@
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt
-from backend.config import settings # Import the settings
+from config import settings # Import the settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
