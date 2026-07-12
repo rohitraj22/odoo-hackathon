@@ -8,17 +8,30 @@ import { showToast, openModal } from "../app.js";
 export function renderAllocations(container, user) {
     container.innerHTML = `
         <div class="allocations-wrapper">
-            <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:18px;">Asset Allocation</h3>
+
+            <!-- Page header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
+                <div>
+                    <h2 style="font-size:1.3rem; font-weight:800; color:var(--color-gray-900); margin-bottom:2px;">Asset Allocation</h2>
+                    <p style="font-size:0.82rem; color:var(--color-gray-400); margin:0;">Allocate, transfer or revoke assets across the organisation.</p>
+                </div>
+            </div>
 
             <!-- Asset search for allocation -->
             <div class="action-card" style="margin-bottom:18px;">
-                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">Allocate or transfer an asset</h4>
+                <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:14px; color:var(--color-gray-800); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="search" style="width:15px;height:15px;color:var(--color-primary);"></i>
+                    Allocate or Transfer an Asset
+                </h4>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
                     <div class="form-group" style="flex:1; min-width:160px; margin-bottom:0;">
                         <label for="alloc-asset-search">Asset Tag</label>
                         <input type="text" id="alloc-asset-search" class="form-control" placeholder="e.g. AF-0114" autocomplete="off">
                     </div>
-                    <button class="btn btn-primary" id="alloc-lookup-btn">Look up</button>
+                    <button class="btn btn-primary" id="alloc-lookup-btn">
+                        <i data-lucide="search" style="width:16px;height:16px;"></i>
+                        Look Up
+                    </button>
                 </div>
                 <!-- Conflict banner injected here dynamically -->
                 <div id="alloc-conflict-banner" style="display:none; margin-top:14px;"></div>
@@ -28,18 +41,25 @@ export function renderAllocations(container, user) {
 
             <!-- My Allocations List -->
             <div class="action-card" style="margin-bottom:18px;">
-                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">My Current Allocations</h4>
+                <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:14px; color:var(--color-gray-800); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="clipboard-list" style="width:15px;height:15px;color:var(--color-primary);"></i>
+                    My Current Allocations
+                </h4>
                 <div id="my-allocations-list"></div>
             </div>
 
             <!-- Transfer History -->
             <div class="action-card">
-                <h4 style="font-size:0.925rem; font-weight:700; margin-bottom:12px;">Transfer History</h4>
+                <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:14px; color:var(--color-gray-800); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="arrow-right-left" style="width:15px;height:15px;color:var(--color-primary);"></i>
+                    Transfer History
+                </h4>
                 <div id="transfer-history-list"></div>
             </div>
         </div>
     `;
 
+    lucide.createIcons();
     renderMyAllocations(user);
     renderTransferHistory(user);
 
@@ -64,56 +84,78 @@ function renderMyAllocations(user) {
     if (!el) return;
 
     if (!list.length) {
-        el.innerHTML = `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No allocations found.</p>`;
+        el.innerHTML = `
+            <div style="text-align:center; padding:32px; color:var(--color-gray-400);">
+                <i data-lucide="inbox" style="width:32px;height:32px;opacity:0.35;margin-bottom:10px;"></i>
+                <p style="font-size:0.875rem;">No allocations found.</p>
+            </div>`;
+        lucide.createIcons();
         return;
     }
 
     el.innerHTML = `
+        <div class="table-responsive">
         <table class="table">
             <thead>
-                <tr><th>Asset Tag</th><th>Asset Name</th><th>Holder</th><th>Dept</th><th>Since</th><th>Status</th><th style="text-align:right;">Actions</th></tr>
+                <tr>
+                    <th>Asset Tag</th>
+                    <th>Asset Name</th>
+                    <th>Holder</th>
+                    <th>Department</th>
+                    <th>Since</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
             </thead>
             <tbody>
-                ${list.slice(0, 10).map(a => `
+                ${list.slice(0, 10).map(a => {
+                    // Support both schema versions
+                    const holderName = a.holderName || a.employeeName || '—';
+                    const dateVal    = a.date || a.allocationDate || '—';
+                    const statusKey  = (a.status || 'active').toLowerCase();
+                    return `
                     <tr>
-                        <td style="font-family:monospace; font-weight:700;">${a.assetId}</td>
-                        <td>${a.assetName}</td>
-                        <td>${a.holderName}</td>
-                        <td>${a.department || '—'}</td>
-                        <td style="font-size:0.8rem; color:var(--color-gray-500);">${a.date}</td>
-                        <td><span class="badge badge-available">${a.status}</span></td>
+                        <td><span style="font-family:monospace; font-weight:700; color:var(--color-primary); background:var(--color-primary-ultralight); padding:3px 8px; border-radius:4px;">${a.assetId}</span></td>
+                        <td style="font-weight:600; color:var(--color-gray-900);">${a.assetName}</td>
+                        <td style="color:var(--color-gray-700);">${holderName}</td>
+                        <td style="color:var(--color-gray-500);">${a.department || '—'}</td>
+                        <td style="font-size:0.8rem; color:var(--color-gray-400);">${dateVal}</td>
+                        <td><span class="badge badge-${statusKey}">${a.status}</span></td>
                         <td style="text-align:right;">
                             ${(user.role === 'Admin' || user.role === 'Asset Manager') ? `
                                 <button class="btn btn-secondary btn-sm revoke-btn" data-id="${a.id}">Revoke</button>
-                            ` : ''}
+                            ` : '<span style="color:var(--color-gray-400);font-size:0.78rem;">—</span>'}
                         </td>
-                    </tr>
-                `).join("")}
+                    </tr>`;
+                }).join("")}
             </tbody>
         </table>
+        </div>
     `;
 
     el.querySelectorAll(".revoke-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const allocId = btn.dataset.id;
-            const allocs = Store.getAllocations();
-            const alloc = allocs.find(a => a.id === allocId);
+            const allocs  = Store.getAllocations();
+            const alloc   = allocs.find(a => a.id === allocId);
             if (!alloc) return;
 
-            openModal("Revoke Allocation", `<p>Revoke allocation of <strong>${alloc.assetName}</strong> from <strong>${alloc.holderName}</strong>?</p>`, () => {
+            const displayName = alloc.holderName || alloc.employeeName || 'unknown';
+
+            openModal("Revoke Allocation", `<p>Revoke allocation of <strong>${alloc.assetName}</strong> from <strong>${displayName}</strong>?</p>`, () => {
                 const assets = Store.getAssets();
-                const asset = assets.find(a => a.id === alloc.assetId);
+                const asset  = assets.find(a => a.id === alloc.assetId);
                 if (asset) {
                     asset.status = "Available";
-                    asset.currentHolderId = "";
+                    asset.currentHolderId   = "";
                     asset.currentHolderName = "";
-                    asset.history.push({ date: new Date().toISOString().split("T")[0], action: "Revocation", user: user.name, details: `Revoked from ${alloc.holderName}` });
+                    asset.history.push({ date: new Date().toISOString().split("T")[0], action: "Revocation", user: user.name, details: `Revoked from ${displayName}` });
                     Store.saveAssets(assets);
                 }
 
                 alloc.status = "Revoked";
                 Store.saveAllocations(allocs);
-                Store.logActivity(user.name, "Allocation Revoked", `${alloc.assetName} revoked from ${alloc.holderName}`);
+                Store.logActivity(user.name, "Allocation Revoked", `${alloc.assetName} revoked from ${displayName}`);
                 showToast(`Allocation revoked for ${alloc.assetName}.`, "success");
                 renderMyAllocations(user);
                 return true;
@@ -128,23 +170,43 @@ function renderTransferHistory(user) {
     if (!el) return;
 
     if (!history.length) {
-        el.innerHTML = `<p style="text-align:center; color:var(--color-gray-400); padding:20px;">No transfers recorded.</p>`;
+        el.innerHTML = `
+            <div style="text-align:center; padding:32px; color:var(--color-gray-400);">
+                <i data-lucide="file-clock" style="width:32px;height:32px;opacity:0.35;margin-bottom:10px;"></i>
+                <p style="font-size:0.875rem;">No transfers recorded.</p>
+            </div>`;
+        lucide.createIcons();
         return;
     }
 
     el.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
             ${history.map(t => `
-                <div style="padding:10px 14px; border:1px solid var(--color-gray-200); border-radius:var(--radius-md); font-size:0.85rem; background:var(--color-gray-50);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                        <span style="font-weight:700;">${t.assetId} · ${t.assetName}</span>
-                        <span class="badge ${t.status === 'Completed' ? 'badge-available' : 'badge-allocated'}">${t.status}</span>
+                <div style="
+                    padding:13px 16px;
+                    border:1px solid var(--color-gray-100);
+                    border-radius:var(--radius-md);
+                    font-size:0.85rem;
+                    background:var(--color-white);
+                    display:flex; justify-content:space-between; align-items:center;
+                    gap:12px;
+                    transition: box-shadow 0.15s;
+                " onmouseenter="this.style.boxShadow='var(--shadow-md)'" onmouseleave="this.style.boxShadow='none'">
+                    <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+                        <div style="width:36px; height:36px; border-radius:9px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="arrow-right-left" style="width:16px;height:16px;"></i>
+                        </div>
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; color:var(--color-gray-900); margin-bottom:2px;">${t.assetId} · ${t.assetName}</div>
+                            <div style="color:var(--color-gray-500); font-size:0.8rem;">
+                                <strong style="color:var(--color-gray-700);">${t.fromName}</strong>
+                                <span style="margin:0 6px; color:var(--color-gray-300);">→</span>
+                                <strong style="color:var(--color-gray-700);">${t.toName}</strong>
+                            </div>
+                            <div style="color:var(--color-gray-400); font-size:0.75rem; margin-top:2px;">${t.date} · ${t.reason || '—'}</div>
+                        </div>
                     </div>
-                    <div style="color:var(--color-gray-600);">
-                        <i data-lucide="arrow-right-left" style="width:12px; height:12px;"></i>
-                        From <strong>${t.fromName}</strong> → <strong>${t.toName}</strong>
-                    </div>
-                    <div style="color:var(--color-gray-400); font-size:0.775rem; margin-top:3px;">${t.date} · Reason: ${t.reason || '—'}</div>
+                    <span class="badge ${t.status === 'Completed' ? 'badge-available' : 'badge-pending'}">${t.status}</span>
                 </div>
             `).join("")}
         </div>
@@ -192,8 +254,9 @@ function lookupAssetForAllocation(tag, user) {
 function renderAllocateForm(asset, employees, depts, user, formEl) {
     formEl.style.display = "block";
     formEl.innerHTML = `
-        <div style="border:1px solid var(--color-gray-200); border-radius:var(--radius-md); padding:16px; background:var(--color-gray-50);">
-            <div style="font-size:0.9rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">
+        <div style="border:1px solid var(--color-gray-100); border-radius:var(--radius-md); padding:18px; background:#fafbfc; border-top:3px solid var(--color-success);">
+            <div style="font-size:0.9rem; font-weight:700; margin-bottom:14px; color:var(--color-gray-700); display:flex; align-items:center; gap:8px;">
+                <i data-lucide="package-check" style="width:15px;height:15px;color:var(--color-success);"></i>
                 Allocate: <span style="color:var(--color-primary);">${asset.id}</span> · ${asset.name}
             </div>
             <div class="form-row">
@@ -213,9 +276,13 @@ function renderAllocateForm(asset, employees, depts, user, formEl) {
                 <label for="alloc-notes">Notes</label>
                 <textarea id="alloc-notes" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
             </div>
-            <button class="btn btn-primary" id="submit-alloc-btn">Confirm Allocation</button>
+            <button class="btn btn-primary" id="submit-alloc-btn">
+                <i data-lucide="check" style="width:16px;height:16px;"></i>
+                Confirm Allocation
+            </button>
         </div>
     `;
+    lucide.createIcons();
 
     formEl.querySelector("#submit-alloc-btn").addEventListener("click", () => {
         const empId = formEl.querySelector("#alloc-to-emp").value;
@@ -264,14 +331,15 @@ function renderAllocateForm(asset, employees, depts, user, formEl) {
 function renderTransferForm(asset, employees, depts, user, formEl, isConflict) {
     formEl.style.display = "block";
     formEl.innerHTML = `
-        <div style="border:1px solid var(--color-orange-200,#fed7aa); border-radius:var(--radius-md); padding:16px; background:#fff7ed;">
-            <div style="font-size:0.9rem; font-weight:700; margin-bottom:12px; color:var(--color-gray-700);">
+        <div style="border:1px solid #fde68a; border-radius:var(--radius-md); padding:18px; background:#fffbeb; border-top:3px solid var(--color-warning);">
+            <div style="font-size:0.9rem; font-weight:700; margin-bottom:14px; color:var(--color-gray-700); display:flex; align-items:center; gap:8px;">
+                <i data-lucide="arrow-right-left" style="width:15px;height:15px;color:var(--color-warning);"></i>
                 Transfer Request: <span style="color:var(--color-primary);">${asset.id}</span>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>From</label>
-                    <input type="text" class="form-control" value="${asset.currentHolderName}" readonly style="background:var(--color-gray-100);">
+                    <input type="text" class="form-control" value="${asset.currentHolderName}" readonly style="background:var(--color-gray-100); color:var(--color-gray-500);">
                 </div>
                 <div class="form-group">
                     <label for="transfer-to-emp">To</label>
@@ -285,9 +353,13 @@ function renderTransferForm(asset, employees, depts, user, formEl, isConflict) {
                 <label for="transfer-reason">Reason</label>
                 <textarea id="transfer-reason" class="form-control" rows="2" placeholder="State reason for transfer..."></textarea>
             </div>
-            <button class="btn btn-primary" id="submit-transfer-btn">Submit Transfer Request</button>
+            <button class="btn btn-primary" id="submit-transfer-btn">
+                <i data-lucide="send" style="width:16px;height:16px;"></i>
+                Submit Transfer Request
+            </button>
         </div>
     `;
+    lucide.createIcons();
 
     formEl.querySelector("#submit-transfer-btn").addEventListener("click", () => {
         const toEmpId = formEl.querySelector("#transfer-to-emp").value;

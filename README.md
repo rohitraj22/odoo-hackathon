@@ -1,80 +1,93 @@
 # AssetFlow - Enterprise Asset & Resource Management System
 
-AssetFlow is an Enterprise Asset & Resource Management prototype built to simplify how organizations register, track, allocate, and maintain physical assets and shared resources. Designed to integrate into a centralized ERP platform (matching Odoo aesthetics), it provides role-based workspaces and strict business-rule validations.
+AssetFlow is a centralized, role-based ERP platform designed to simplify how organizations track, allocate, and maintain their physical assets and shared resources. It eliminates manual tracking inefficiencies by digitizing asset lifecycles, resource bookings, and maintenance workflows into an intuitive, responsive interface.
 
 ---
 
-## Technical Stack & Architecture
+## 🚀 Key Features
 
-- **Frontend Core**: HTML5 + Vanilla JavaScript (Modular ES6 syntax). No heavy frameworks or build steps required.
-- **Styling**: Vanilla CSS custom design system (Odoo-inspired purple theme, glassmorphic paneling, responsive layouts, micro-animations, and CSS Grid/Flex layouts).
-- **Persistence**: Centralized reactive data store (`localStorage`-backed `store.js`), ensuring data modifications (e.g., registration, bookings, audits) persist across refreshes.
-- **Libraries**:
-  - [Lucide Icons](https://unpkg.com/lucide) (crisp vector SVG icons via CDN).
-  - [Chart.js](https://cdn.jsdelivr.net/npm/chart.js) (interactive canvas charts for operational analytics via CDN).
-  - [Google Fonts (Inter)](https://fonts.google.com/specimen/Inter).
+### 1. 🔐 Upgraded Login & Signup Experience
+* **Split-Screen Layout**: A desktop-optimized design featuring a brand panel with glassmorphic elements and key features list, collapsing to a single-pane form layout on mobile.
+* **Password Visibility Toggles**: Interactive toggle buttons for all password fields (Login, Signup, and Reset).
+* **Password Strength Checker**: Real-time password feedback (minimum length, capital letter, digit checklist) that dynamically enables/disables sign-up completion.
+* **Simulated Password Recovery**: A fully functional multi-step forgot password flow:
+  1. **Request**: Look up registered email addresses.
+  2. **OTP Verification**: Enter code `123456` (simulation).
+  3. **Reset**: Set and confirm a new password.
+  4. **Persist**: Directly updates the user’s credentials in the local database.
 
----
+### 2. 📊 Real-Time Operations Dashboard
+* **KPI Metrics**: Dynamic cards for Assets Available, Assets Allocated, Active Bookings, and Overdue Returns.
+* **Alert System**: Overdue expected return dates are flagged and highlighted in warning/danger logs.
+* **Quick Actions**: Instant access to Register Asset, Book Resource, and Raise Maintenance Request based on roles.
 
-## Project Structure
+### 3. 🏢 Organization Setup (Admin-Only)
+* **Department Management**: Create, edit, and deactivate departments with hierarchy (parent/child relationships).
+* **Asset Categories**: Set custom fields per category (e.g. warranty period for Electronics, material for Furniture).
+* **Employee Directory**: Manage roles (Admin, Asset Manager, Department Head, Employee) and statuses.
 
-```text
-├── index.html               # Shell UI structure, global modals, drawers, and overlays
-├── README.md                # System documentation
-├── css/
-│   └── style.css            # Central design tokens, animations, widgets, and styles
-└── js/
-    ├── app.js               # Page routing (hashchange), global events, and modal utilities
-    ├── store.js             # LocalStorage database engine & business logic validations
-    └── screens/
-        ├── login.js         # Authentication page, signup engine, and credentials helper
-        ├── dashboard.js     # Home widgets, KPI statistics, and overdue allocations list
-        ├── setup.js         # Admin panel (department trees, custom fields, role promotion)
-        ├── assets.js        # Dynamic assets list, details slider, and specifications forms
-        ├── allocations.js   # Return check-ins, allocations, and transfer request approvals
-        ├── bookings.js      # Month calendar scheduler widget and overlap checker
-        ├── maintenance.js   # Repair reporting, manager approvals, tech assignment, and resolve
-        ├── audits.js        # Audit launches, checklist marks, and discrepancy freeze reports
-        ├── reports.js       # Chart.js dashboards (conditions, depts, incidents, bookings)
-        └── logs.js          # Audit trails logs viewer and notification panel history
-```
+### 4. 📁 Central Asset Directory
+* **Registration**: Auto-generated asset tags (e.g. `AF-0001`), location tracking, acquisition logs, and bookable configuration.
+* **Lifecycle Transitions**: Tracks assets through Available, Allocated, Under Maintenance, Lost, and Retired states.
+* **Audit Trail**: Direct per-asset history of allocation and maintenance events.
 
----
+### 5. 🔄 Conflict-Free Allocations & P2P Transfers
+* **Double-Allocation Prevention**: System blocks allocating already-taken assets.
+* **Transfer Requests**: Offers a "Request Transfer" action if an asset is occupied, sending a request to the current holder's manager.
+* **Check-In Return Flow**: Enter notes and check condition on return, reverting status back to Available.
 
-## Core Business Validations Supported
+### 6. 📅 Smart Resource Bookings
+* **Overlap Check**: Strict calendar-based time slot check to prevent double bookings of rooms/equipment.
+* **Booking Status**: Track Upcoming, Ongoing, and Completed reservations.
 
-1. **Asset Allocation Conflict Prevention**:
-   - Assets cannot be double-allocated. Attempting to allocate an already assigned asset prompts the user with a conflict warning, suggesting a **Transfer Request** from the current holder instead.
-2. **Resource Overlap Booking Validation**:
-   - Shared resources (rooms, vehicles) prevent concurrent bookings. Booking requests are cross-checked (`(StartA < EndB) and (EndA > StartB)`) and rejected with alert banners if overlapping.
-3. **Structured Maintenance Flow**:
-   - Tickets are routed from *Pending* ➔ *Approved/Rejected* (Managers) ➔ *In Progress* (Technician Assigned) ➔ *Resolved*.
-   - Asset status automatically flips to `Under Maintenance` upon approval, and reverts to `Available`/`Allocated` upon resolution.
-4. **Audit Cycle Discrepancy Reporting**:
-   - Auditor verify checklists freeze when closed by Admin.
-   - Any items marked `Missing` auto-generate discrepancy reports and change asset statuses to `Lost` in the main directory.
+### 7. 🔧 Maintenance Workflows
+* **Ticket Lifecycle**: Pending Request ➔ Approved ➔ In Progress (Technician Assigned) ➔ Resolved.
+* **Asset Automation**: Auto-updates asset status to *Under Maintenance* upon approval, reverting to *Available* on resolution.
 
 ---
 
-## Simulated Accounts & Logins
+## 🛠️ Architecture & Database
 
-A floating **Prototype Tester Panel** is provided in the bottom-right corner of the workspace. This panel allows you to instantly switch roles to test different permissions without logging out.
+AssetFlow is built with a zero-dependency front-end architecture:
+* **Frontend**: HTML5, Vanilla ES Modules JS, CSS3 Design Tokens.
+* **Mock Database**: Browser **`localStorage`** (implemented in `js/store.js`). This allows:
+  * **Zero Setup**: Immediate use in any browser sandbox.
+  * **Data Persistence**: Data persists across page reloads and browser sessions.
+  * **Interactive Testing**: Role changes update data instantly.
 
-| Workspace Persona | Email Login | Password | Role Description |
-| :--- | :--- | :--- | :--- |
-| **System Admin** | `admin@assetflow.com` | `password` | Organization setup, department head Promotions, closes audits, views analytics |
-| **Asset Manager** | `manager@assetflow.com` | `password` | Asset registration, allocations, transfer approvals, maintenance approvals |
-| **Dept Head** | `head@assetflow.com` | `password` | Views department assets, books resources, approves transfers within dept |
-| **Employee** | `employee@assetflow.com` | `password` | General requests, books resources, raises maintenance tickets |
+---
 
-*Note: You can also sign up as a new Employee. The Admin can then promote your new account to any role via the **Org Setup** screen.*
+## 🚀 How to Run the Project
 
-## Getting Started / Running Locally
+Since the project uses ES Modules, it requires a local web server to avoid CORS policy blockages when loading script imports.
 
-Since the application is built using standard ES6 Modules, it requires running inside a local web server environment (browsers restrict ES modules imports on direct `file://` protocols).
+### Option A: Using Python (Recommended)
+1. Open terminal inside the `odoo-hackathon` folder.
+2. Run the command:
+   ```bash
+   python -m http.server 8000
+   ```
+3. Open your browser and navigate to **`http://localhost:8000`**.
 
-Navigate to the project directory in your terminal and start the local HTTP server:
-```bash
-python3 -m http.server 8080
-```
-Then open **[http://localhost:8080](http://localhost:8080)** in your web browser.
+### Option B: Using Node.js
+1. Open terminal inside the `odoo-hackathon` folder.
+2. Run the command:
+   ```bash
+   npx serve -l 8000
+   ```
+3. Open your browser and navigate to **`http://localhost:8000`**.
+
+---
+
+## 🔑 Prototype Demo Credentials
+
+The database is pre-seeded with these credentials for testing. Password is **`password`** for all accounts.
+
+| Role | Email | Name |
+| :--- | :--- | :--- |
+| **Admin** | `admin@assetflow.com` | System Admin |
+| **Asset Manager** | `manager@assetflow.com` | Priya Sharma |
+| **Department Head** | `head@assetflow.com` | Raj Patel |
+| **Employee** | `employee@assetflow.com` | John Doe |
+
+> 💡 **Tip**: Use the **Prototype Tester Panel** at the bottom-right of the dashboard screen to switch active roles instantly without logging out.
