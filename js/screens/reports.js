@@ -4,17 +4,28 @@
 
 import { Store } from "../store.js";
 
-export function renderReports(container, user) {
-    const assets = Store.getAssets();
-    const allocations = Store.getAllocations();
-    const maintenance = Store.getMaintenance();
-    const depts = Store.getDepartments();
+export async function renderReports(container, user) {
+    container.innerHTML = `
+        <div class="loading-state">
+            <i data-lucide="loader-2" class="spin-icon"></i>
+            <div>Loading reports...</div>
+        </div>
+    `;
+    lucide.createIcons();
+
+    const [assets, allocations, maintenance, depts, employees] = await Promise.all([
+        Store.fetchAssets(),
+        Store.fetchAllocations(),
+        Store.fetchMaintenance(),
+        Store.fetchDepartments(),
+        Store.fetchEmployees()
+    ]);
 
     // Compute per-department utilization %
     const deptUtil = depts.map(d => {
-        const emps = Store.getEmployees().filter(e => e.departmentId === d.id);
+        const emps = employees.filter(e => e.departmentId === d.id);
         const empIds = new Set(emps.map(e => e.id));
-        const deptAssets = allocations.filter(a => empIds.has(a.holderId) && a.status === "Active").length;
+        const deptAssets = allocations.filter(a => empIds.has(a.employeeId || a.holderId) && a.status === "Active").length;
         const totalDeptAssets = emps.length > 0 ? Math.max(deptAssets, 1) : 1;
         const pct = Math.min(Math.round((deptAssets / Math.max(emps.length * 2, 1)) * 100), 100);
         return { name: d.name, pct, count: deptAssets };

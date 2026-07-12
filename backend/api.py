@@ -13,7 +13,6 @@ import schemas
 from database import SessionLocal, engine, get_db
 
 
-models.Base.metadata.drop_all(bind=engine)
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AssetFlow API")
@@ -25,6 +24,11 @@ app.add_middleware(
         "http://127.0.0.1:8080",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "*",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -478,7 +482,6 @@ def create_maintenance(payload: Dict[str, Any], db: Session = Depends(get_db)):
     mt_id = f"MT-{int(time.time())}"
     db.add(models.MaintenanceTicket(id=mt_id, asset_id=payload.get("asset_id"), asset_name=asset.name if asset else payload.get("asset_id"), issue_description=payload.get("issue_description", ""), priority=payload.get("priority", "Medium"), employee_id=payload.get("employee_id"), reported_by_name=employee.name if employee else payload.get("employee_id"), reported_date=today(), status="Pending", technician_id=None, technician_name=None, notes=[], resolved_date=None))
     if asset:
-        asset.status = "Under Maintenance"
         asset.history = ensure_list(asset.history) + [{"date": today(), "action": "Maintenance Requested", "user": employee.name if employee else payload.get("employee_id"), "details": payload.get("issue_description", "")}]
     db.commit()
     return {"success": True, "maintenance_id": mt_id}
@@ -489,13 +492,17 @@ def update_maintenance(maintenance_id: str, payload: Dict[str, Any], db: Session
     ticket = db.query(models.MaintenanceTicket).filter(models.MaintenanceTicket.id == maintenance_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Maintenance ticket not found")
-    ticket.status = payload.get("status", ticket.status)
+    new_status = payload.get("status", ticket.status)
+    ticket.status = new_status
     ticket.technician_name = payload.get("technician", ticket.technician_name)
     if payload.get("notes"):
         ticket.notes = ensure_list(ticket.notes) + [{"date": today(), "user": payload.get("action_user", "System"), "text": payload.get("notes")}]
+    asset = db.query(models.Asset).filter(models.Asset.id == ticket.asset_id).first()
+    if asset and new_status == "Approved":
+        asset.status = "Under Maintenance"
+        asset.history = ensure_list(asset.history) + [{"date": today(), "action": "Maintenance Approved", "user": payload.get("action_user", "System"), "details": payload.get("notes", "Approved for repair")}]
     if ticket.status == "Resolved":
         ticket.resolved_date = today()
-        asset = db.query(models.Asset).filter(models.Asset.id == ticket.asset_id).first()
         if asset:
             asset.status = "Available"
             asset.history = ensure_list(asset.history) + [{"date": today(), "action": "Maintenance Resolved", "user": payload.get("action_user", "System"), "details": payload.get("notes", "Resolved")}]

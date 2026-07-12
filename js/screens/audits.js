@@ -5,8 +5,28 @@
 import { Store } from "../store.js";
 import { showToast, openModal } from "../app.js";
 
-export function renderAudits(container, user) {
-    const audits = Store.getAudits();
+let pageAudits = [];
+let pageAssets = [];
+let pageDepartments = [];
+let pageEmployees = [];
+
+export async function renderAudits(container, user) {
+    container.innerHTML = `
+        <div class="loading-state">
+            <i data-lucide="loader-2" class="spin-icon"></i>
+            <div>Loading audits...</div>
+        </div>
+    `;
+    lucide.createIcons();
+
+    [pageAudits, pageAssets, pageDepartments, pageEmployees] = await Promise.all([
+        Store.fetchAudits(),
+        Store.fetchAssets(),
+        Store.fetchDepartments(),
+        Store.fetchEmployees()
+    ]);
+
+    const audits = pageAudits;
     const activeAudit = audits.find(a => a.status === "Active");
 
     container.innerHTML = `
@@ -51,7 +71,7 @@ export function renderAudits(container, user) {
 }
 
 function renderActiveAudit(audit, user) {
-    const assets = Store.getAssets();
+    const assets = pageAssets;
     const checklist = audit.checklist || [];
 
     const verified = checklist.filter(c => c.status === "Verified").length;
@@ -191,7 +211,8 @@ function handleVerify(assetId, result, audit, user) {
     showToast(`${assetId} marked as ${result}.`, result === "Verified" ? "success" : "warning");
 
     // Re-render
-    renderAudits(document.querySelector(".audits-wrapper")?.closest(".screen-content") || document.querySelector("[id^='screen-']"), user);
+    const viewport = document.getElementById("content-viewport");
+    if (viewport) renderAudits(viewport, user);
 }
 
 function updateDiscrepancyBanner(audit) {
@@ -217,8 +238,8 @@ function updateDiscrepancyBanner(audit) {
 }
 
 function openStartAuditModal(user) {
-    const assets = Store.getAssets();
-    const departments = Store.getDepartments();
+    const assets = pageAssets;
+    const departments = pageDepartments;
 
     const modalHtml = `
         <div class="form-group">
@@ -255,8 +276,7 @@ function openStartAuditModal(user) {
 
         const scopeAssets = deptId
             ? assets.filter(a => {
-                const emps = Store.getEmployees();
-                const holder = emps.find(e => e.id === a.currentHolderId);
+                const holder = pageEmployees.find(e => e.id === a.currentHolderId);
                 return holder && holder.departmentId === deptId;
               })
             : assets;
@@ -288,7 +308,7 @@ function openStartAuditModal(user) {
         Store.logActivity(user.name, "Audit Started", `${name} — ${scopeAssets.length} assets in scope`);
         showToast(`Audit "${name}" started with ${scopeAssets.length} assets.`, "success");
 
-        const mainEl = document.querySelector(".audits-wrapper")?.closest("[class*='screen']") || document.querySelector("main > div");
+        const mainEl = document.getElementById("content-viewport");
         if (mainEl) renderAudits(mainEl, user);
         return true;
     }, "Start Audit");

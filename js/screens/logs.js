@@ -12,8 +12,27 @@ const TABS = [
 ];
 
 let activeTab = "all";
+let pageLogs = [];
+let pageTransfers = [];
+let pageBookings = [];
+let pageMaintenance = [];
 
-export function renderLogs(container, user) {
+export async function renderLogs(container, user) {
+    container.innerHTML = `
+        <div class="loading-state">
+            <i data-lucide="loader-2" class="spin-icon"></i>
+            <div>Loading notifications...</div>
+        </div>
+    `;
+    lucide.createIcons();
+
+    [pageLogs, pageTransfers, pageBookings, pageMaintenance] = await Promise.all([
+        Store.fetchLogs(),
+        Store.fetchTransfers(),
+        Store.fetchBookings(),
+        Store.fetchMaintenance()
+    ]);
+
     container.innerHTML = `
         <div class="logs-wrapper">
             <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:18px;">Notifications</h3>
@@ -106,10 +125,10 @@ function renderNotificationList(user) {
 }
 
 function buildNotifications(user) {
-    const activity = Store.getActivity();
-    const transfers = Store.getTransfers();
-    const bookings = Store.getBookings();
-    const maintenance = Store.getMaintenance();
+    const activity = pageLogs.length ? pageLogs : Store.getActivitySync();
+    const transfers = pageTransfers.length ? pageTransfers : Store.getTransfers();
+    const bookings = pageBookings.length ? pageBookings : Store.getBookings();
+    const maintenance = pageMaintenance.length ? pageMaintenance : Store.getMaintenance();
 
     const notifications = [];
 
@@ -124,7 +143,7 @@ function buildNotifications(user) {
             id: `act-${i}`,
             title: a.action,
             body: a.details,
-            time: formatRelativeTime(a.date),
+            time: formatRelativeTime(a.timestamp || a.date),
             category,
             unread: i < 3
         });

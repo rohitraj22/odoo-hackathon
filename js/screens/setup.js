@@ -6,8 +6,11 @@ import { Store } from "../store.js";
 import { openModal, showToast } from "../app.js";
 
 let activeTab = "departments"; // departments, categories, employees
+let pageDepts = [];
+let pageCategories = [];
+let pageEmployees = [];
 
-export function renderSetup(container, user) {
+export async function renderSetup(container, user) {
     if (user.role !== "Admin") {
         container.innerHTML = `
             <div class="action-card" style="text-align:center; padding: 48px;">
@@ -18,6 +21,20 @@ export function renderSetup(container, user) {
         `;
         return;
     }
+
+    container.innerHTML = `
+        <div class="loading-state">
+            <i data-lucide="loader-2" class="spin-icon"></i>
+            <div>Loading organization setup...</div>
+        </div>
+    `;
+    lucide.createIcons();
+
+    [pageDepts, pageCategories, pageEmployees] = await Promise.all([
+        Store.fetchDepartments(),
+        Store.fetchCategories(),
+        Store.fetchEmployees()
+    ]);
 
     container.innerHTML = `
         <div class="setup-wrapper">
@@ -88,7 +105,7 @@ function triggerAddAction(user) {
    Departments View
    ==================================================== */
 function renderDepartmentsList(container, user) {
-    const depts = Store.getDepartments();
+    const depts = pageDepts.length ? pageDepts : Store.getDepartments();
     
     container.innerHTML = `
         <div class="table-responsive">
@@ -128,7 +145,7 @@ function renderDepartmentsList(container, user) {
         btn.addEventListener("click", () => {
             const id = btn.dataset.id;
             const dept = depts.find(d => d.id === id);
-            const emps = Store.getEmployees();
+            const emps = pageEmployees.length ? pageEmployees : Store.getEmployees();
 
             const modalHtml = `
                 <div class="form-group">
@@ -173,6 +190,7 @@ function renderDepartmentsList(container, user) {
                 target.headId = headId;
                 target.status = status;
                 Store.saveDepartments(list);
+                pageDepts = list;
 
                 showToast(`Department "${name}" updated.`, "success");
                 renderTabContent(user);
@@ -183,7 +201,7 @@ function renderDepartmentsList(container, user) {
 }
 
 function triggerAddDepartment(user) {
-    const emps = Store.getEmployees();
+    const emps = pageEmployees.length ? pageEmployees : Store.getEmployees();
     const modalHtml = `
         <div class="form-group">
             <label for="new-dept-name">Department Name</label>
@@ -221,6 +239,7 @@ function triggerAddDepartment(user) {
             status: "Active"
         });
         Store.saveDepartments(list);
+        pageDepts = list;
 
         showToast(`Department "${name}" added.`, "success");
         renderTabContent(user);
@@ -232,7 +251,7 @@ function triggerAddDepartment(user) {
    Categories View
    ==================================================== */
 function renderCategoriesList(container, user) {
-    const cats = Store.getCategories();
+    const cats = pageCategories.length ? pageCategories : Store.getCategories();
     container.innerHTML = `
         <div class="table-responsive">
             <table class="table">
@@ -275,6 +294,7 @@ function triggerAddCategory(user) {
             customFields: []
         });
         Store.saveCategories(list);
+        pageCategories = list;
 
         showToast(`Category "${name}" added.`, "success");
         renderTabContent(user);
@@ -286,8 +306,8 @@ function triggerAddCategory(user) {
    Employees View
    ==================================================== */
 function renderEmployeesList(container, user) {
-    const emps = Store.getEmployees();
-    const depts = Store.getDepartments();
+    const emps = pageEmployees.length ? pageEmployees : Store.getEmployees();
+    const depts = pageDepts.length ? pageDepts : Store.getDepartments();
 
     container.innerHTML = `
         <div class="table-responsive">
@@ -327,7 +347,7 @@ function renderEmployeesList(container, user) {
 }
 
 function triggerAddEmployee(user) {
-    const depts = Store.getDepartments();
+    const depts = pageDepts.length ? pageDepts : Store.getDepartments();
     const modalHtml = `
         <div class="form-group">
             <label for="new-emp-name">Employee Name</label>
@@ -363,6 +383,7 @@ function triggerAddEmployee(user) {
             status: "Active"
         });
         Store.saveEmployees(list);
+        pageEmployees = list;
 
         showToast(`Employee "${name}" registered.`, "success");
         renderTabContent(user);
