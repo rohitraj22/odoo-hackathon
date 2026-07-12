@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssetFlow - Enterprise Asset & Resource Management</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app">
+        <!-- Auth Shell (Rendered dynamically if not logged in) -->
+        <div id="auth-container" class="hidden"></div>
+
+        <!-- Main Workspace Shell (Rendered if logged in) -->
+        <div id="main-shell" class="hidden">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <span class="brand-logo"><i data-lucide="layers"></i></span>
+                    <span class="brand-name">Asset<span class="text-primary-light">Flow</span></span>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li>
+                            <a href="#dashboard" class="nav-link active" data-screen="dashboard">
+                                <i data-lucide="layout-dashboard"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="admin-only">
+                            <a href="#setup" class="nav-link" data-screen="setup">
+                                <i data-lucide="settings"></i>
+                                <span>Org Setup</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#assets" class="nav-link" data-screen="assets">
+                                <i data-lucide="package"></i>
+                                <span>Asset Directory</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#allocations" class="nav-link" data-screen="allocations">
+                                <i data-lucide="repeat"></i>
+                                <span>Allocations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#bookings" class="nav-link" data-screen="bookings">
+                                <i data-lucide="calendar"></i>
+                                <span>Resource Bookings</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#maintenance" class="nav-link" data-screen="maintenance">
+                                <i data-lucide="wrench"></i>
+                                <span>Maintenance</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#audits" class="nav-link" data-screen="audits">
+                                <i data-lucide="clipboard-check"></i>
+                                <span>Audits</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#reports" class="nav-link" data-screen="reports">
+                                <i data-lucide="bar-chart-3"></i>
+                                <span>Reports & Analytics</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#logs" class="nav-link" data-screen="logs">
+                                <i data-lucide="history"></i>
+                                <span>Logs & Notifications</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Current User Profile Card inside Sidebar -->
+                <div class="sidebar-user">
+                    <div class="user-avatar" id="sidebar-user-avatar">EM</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebar-user-name">John Doe</div>
+                        <div class="user-role" id="sidebar-user-role">Employee</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Layout Grid -->
+            <div class="main-layout">
+                <!-- Header -->
+                <header class="main-header">
+                    <div class="header-left">
+                        <button class="btn-icon sidebar-toggle" id="sidebar-toggle-btn">
+                            <i data-lucide="menu"></i>
+                        </button>
+                        <h2 class="header-title" id="page-title">Dashboard</h2>
+                    </div>
+
+                    <div class="header-right">
+                        <!-- Notification Trigger -->
+                        <div class="notification-trigger-container">
+                            <button class="btn-icon" id="notification-bell-btn">
+                                <i data-lucide="bell"></i>
+                                <span class="notification-badge hidden" id="noti-badge-count">0</span>
+                            </button>
+                            <!-- Notification Dropdown -->
+                            <div class="notification-dropdown hidden" id="notification-dropdown">
+                                <div class="dropdown-header">
+                                    <h3>Notifications</h3>
+                                    <button class="btn-text" id="noti-clear-all">Clear All</button>
+                                </div>
+                                <div class="dropdown-list" id="noti-dropdown-list">
+                                    <div class="empty-state">No new notifications</div>
+                                </div>
+                                <div class="dropdown-footer">
+                                    <a href="#logs" class="btn-text full-width text-center" id="noti-view-all">View All Activity</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Session Dropdown -->
+                        <div class="user-dropdown-container">
+                            <button class="btn-profile" id="user-profile-btn">
+                                <span class="profile-name" id="header-user-name">John Doe</span>
+                                <i data-lucide="chevron-down"></i>
+                            </button>
+                            <div class="user-dropdown hidden" id="user-dropdown">
+                                <div class="dropdown-user-details">
+                                    <div class="name" id="dropdown-full-name">John Doe</div>
+                                    <div class="email" id="dropdown-email">john@example.com</div>
+                                    <div class="dept" id="dropdown-dept">Department: IT</div>
+                                </div>
+                                <hr>
+                                <button class="btn-dropdown-item text-danger" id="logout-btn">
+                                    <i data-lucide="log-out"></i> Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Page Content Area -->
+                <main class="content-viewport" id="content-viewport">
+                    <!-- Screen HTML will be injected here by app.js -->
+                </main>
+            </div>
+        </div>
+
+        <!-- Floating Role Switcher Panel for Easy Testing -->
+        <div class="role-switcher-panel" id="role-switcher-panel">
+            <div class="switcher-header">
+                <span><i data-lucide="shield-alert"></i> Prototype Tester Panel</span>
+                <button class="btn-icon-sm" id="toggle-switcher-btn"><i data-lucide="chevron-down"></i></button>
+            </div>
+            <div class="switcher-body" id="switcher-body">
+                <p class="switcher-description">Instantly switch login roles to test different permissions and workflows:</p>
+                <div class="switcher-buttons">
+                    <button class="btn-switcher" data-role="Admin" title="admin@assetflow.com">Admin</button>
+                    <button class="btn-switcher" data-role="Asset Manager" title="manager@assetflow.com">Asset Manager</button>
+                    <button class="btn-switcher" data-role="Department Head" title="head@assetflow.com">Dept Head</button>
+                    <button class="btn-switcher" data-role="Employee" title="employee@assetflow.com">Employee</button>
+                </div>
+                <div class="switcher-status">
+                    <span>Active Role: <strong id="switcher-active-role">Employee</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Drawer / Slide-over (Used for viewing asset history details, booking details, etc.) -->
+        <div class="drawer-overlay hidden" id="drawer-overlay"></div>
+        <div class="drawer-panel hidden" id="drawer-panel">
+            <div class="drawer-header">
+                <h3 id="drawer-title">Details</h3>
+                <button class="btn-icon" id="drawer-close-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="drawer-body" id="drawer-body">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+
+        <!-- Modal Dialogs -->
+        <div class="modal-overlay hidden" id="modal-overlay"></div>
+        <div class="modal-container hidden" id="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-title">Confirm Action</h3>
+                <button class="btn-icon" id="modal-close-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+
+        <!-- Global Toast Notifications -->
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <!-- Core Javascript Setup -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
