@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initApp() {
     setupGlobalDOMEvents();
-    setupRoleSwitcher();
     checkAuthAndRoute();
 }
 
@@ -345,11 +344,8 @@ export function showToast(message, type = "success") {
     }, 4000);
 }
 
-// 7. Role Switcher (Async Updated)
-function setupRoleSwitcher() {
-    const toggleBtn = document.getElementById("toggle-switcher-btn");
-    const panel = document.getElementById("role-switcher-panel");
 
+<<<<<<< HEAD
     if (!toggleBtn || !panel) {
         return;
     }
@@ -398,3 +394,5 @@ function setupRoleSwitcher() {
         });
     }
 }
+=======
+>>>>>>> origin/main
