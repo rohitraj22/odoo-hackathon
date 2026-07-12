@@ -268,7 +268,7 @@ export function renderLogin(container) {
                         </form>
                     </div>
                     <div class="auth-support-note">
-                        Use your organization email to sign in. If you are new, create an employee account from the form below and your access will be stored locally for this workspace.
+                        Use your organization email to sign in. New to AssetFlow? Create an employee account — an Admin will assign your role once you're onboarded.
                     </div>
                 </div>
             </div>
@@ -331,16 +331,25 @@ export function renderLogin(container) {
         btn.addEventListener("click", () => {
             const targetId = btn.dataset.target;
             const input = container.querySelector(`#${targetId}`);
-            const icon = btn.querySelector("i");
+            const icon = btn.querySelector("i, svg");
+            
+            if (!input || !icon) return;
             
             if (input.type === "password") {
                 input.type = "text";
-                icon.setAttribute("data-lucide", "eye-off");
+                const newIcon = document.createElement("i");
+                newIcon.setAttribute("data-lucide", "eye-off");
+                newIcon.style.cssText = "width: 16px; height: 16px;";
+                icon.replaceWith(newIcon);
+                lucide.createIcons({ nodes: [newIcon] });
             } else {
                 input.type = "password";
-                icon.setAttribute("data-lucide", "eye");
+                const newIcon = document.createElement("i");
+                newIcon.setAttribute("data-lucide", "eye");
+                newIcon.style.cssText = "width: 16px; height: 16px;";
+                icon.replaceWith(newIcon);
+                lucide.createIcons({ nodes: [newIcon] });
             }
-            lucide.createIcons();
         });
     });
 
@@ -368,39 +377,49 @@ export function renderLogin(container) {
         if (meetsNumber) score++;
         if (meetsUpper) score++;
 
-        // Reset visual indicators
+        // Reset visual indicators - clear previous state
         bar.className = "password-strength-bar";
+        bar.style.width = "0%";
         
-        if (score === 0 || password.length === 0) {
-            bar.style.width = "0%";
+        if (password.length === 0) {
             text.textContent = "Password Strength: Too weak";
             submitBtn.disabled = true;
-        } else if (score === 1) {
-            bar.classList.add("weak");
-            text.textContent = "Password Strength: Weak (Must satisfy all requirements)";
+        } else if (score < 3) {
+            if (score === 1) {
+                bar.classList.add("weak");
+                bar.style.width = "33%";
+                text.textContent = "Password Strength: Weak";
+            } else if (score === 2) {
+                bar.classList.add("medium");
+                bar.style.width = "66%";
+                text.textContent = "Password Strength: Medium";
+            }
             submitBtn.disabled = true;
-        } else if (score === 2) {
-            bar.classList.add("medium");
-            text.textContent = "Password Strength: Medium (Must satisfy all requirements)";
-            submitBtn.disabled = true;
-        } else if (score === 3) {
+        } else {
+            // All 3 requirements met
             bar.classList.add("strong");
+            bar.style.width = "100%";
             text.textContent = "Password Strength: Strong";
-            submitBtn.disabled = false; // Satisfies all 3 rules!
+            submitBtn.disabled = false;
         }
     });
 
     function updateRequirementUI(reqId, met) {
         const item = container.querySelector(`#${reqId}`);
-        const icon = item.querySelector("i");
+        if (!item) return;
         if (met) {
             item.classList.add("met");
-            icon.setAttribute("data-lucide", "check-circle-2");
         } else {
             item.classList.remove("met");
-            icon.setAttribute("data-lucide", "circle");
         }
-        lucide.createIcons();
+        // Lucide converts <i> to <svg>, so find whichever is present
+        const iconEl = item.querySelector("svg, i");
+        if (iconEl) {
+            const newIcon = document.createElement("i");
+            newIcon.setAttribute("data-lucide", met ? "check-circle-2" : "circle");
+            iconEl.replaceWith(newIcon);
+            lucide.createIcons({ nodes: [newIcon] });
+        }
     }
 
     // Login Form Submit
@@ -477,7 +496,7 @@ export function renderLogin(container) {
         const code = container.querySelector("#otp-code").value.trim();
 
         if (code !== "123456") {
-            showToast("Invalid verification code. Please enter 123456 for testing.", "danger");
+            showToast("Invalid verification code. Please check your email and try again.", "danger");
             return;
         }
 

@@ -4,6 +4,7 @@
 
 const API_BASE = "http://localhost:8000/api";
 const USE_REMOTE_API = true;
+const AUTH_TOKEN_KEY = "assetflow_auth_token";
 
 const STORAGE_KEYS = {
     currentUser: "assetflow_current_user",
