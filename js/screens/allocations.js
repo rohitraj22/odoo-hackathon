@@ -19,7 +19,7 @@ export async function renderAllocations(container, user) {
         </div>
         <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     [pageAssets, pageAllocations, pageTransfers, pageEmployees, pageDepts] = await Promise.all([
         Store.fetchAssets(),
@@ -66,7 +66,7 @@ export async function renderAllocations(container, user) {
         </div>
     `;
 
-    lucide.createIcons();
+    safeCreateIcons();
     renderMyAllocations(user);
     renderTransferHistory(user);
 
@@ -96,7 +96,7 @@ function renderMyAllocations(user) {
 
     if (!list.length) {
         el.innerHTML = `<div class="empty-state"><i data-lucide="inbox"></i><p>No active allocations found.</p></div>`;
-        lucide.createIcons();
+        safeCreateIcons();
         return;
     }
 
@@ -143,7 +143,7 @@ function renderMyAllocations(user) {
         btn.addEventListener("click", () => openReturnModal(btn.dataset.asset, user));
     });
 
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 function renderTransferHistory(user) {
@@ -152,7 +152,7 @@ function renderTransferHistory(user) {
 
     if (!pageTransfers.length) {
         el.innerHTML = `<div class="empty-state"><i data-lucide="file-clock"></i><p>No transfers recorded.</p></div>`;
-        lucide.createIcons();
+        safeCreateIcons();
         return;
     }
 
@@ -200,7 +200,7 @@ function renderTransferHistory(user) {
         });
     });
 
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 async function refreshAndRerender(user) {
@@ -234,7 +234,7 @@ function lookupAssetForAllocation(tag, user) {
                 <div><strong>Already allocated to ${holderName}.</strong> Submit a transfer request to reassign this asset.</div>
             </div>
         `;
-        lucide.createIcons();
+        safeCreateIcons();
         renderTransferForm(asset, user, formEl);
     } else if (asset.status !== "Available") {
         showToast(`Asset is currently ${asset.status} and cannot be allocated.`, "warning");
@@ -267,7 +267,7 @@ function renderAllocateForm(asset, user, formEl) {
             <button class="btn btn-primary" id="submit-alloc-btn"><i data-lucide="check"></i> Confirm Allocation</button>
         </div>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     formEl.querySelector("#submit-alloc-btn").addEventListener("click", async () => {
         const empId = formEl.querySelector("#alloc-to-emp").value;
@@ -323,7 +323,7 @@ function renderTransferForm(asset, user, formEl) {
             <button class="btn btn-primary" id="submit-transfer-btn"><i data-lucide="send"></i> Submit Transfer Request</button>
         </div>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     formEl.querySelector("#submit-transfer-btn").addEventListener("click", async () => {
         const toEmpId = formEl.querySelector("#transfer-to-emp").value;

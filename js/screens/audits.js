@@ -17,7 +17,7 @@ export async function renderAudits(container, user) {
             <div>Loading audits...</div>
         </div>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     [pageAudits, pageAssets, pageDepartments, pageEmployees] = await Promise.all([
         Store.fetchAudits(),
@@ -233,7 +233,7 @@ function updateDiscrepancyBanner(audit) {
                 </div>
             </div>
         `;
-        lucide.createIcons();
+        safeCreateIcons();
     }
 }
 

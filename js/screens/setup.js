@@ -28,7 +28,7 @@ export async function renderSetup(container, user) {
             <div>Loading organization setup...</div>
         </div>
     `;
-    lucide.createIcons();
+    safeCreateIcons();
 
     [pageDepts, pageCategories, pageEmployees] = await Promise.all([
         Store.fetchDepartments(),
@@ -37,17 +37,23 @@ export async function renderSetup(container, user) {
     ]);
 
     container.innerHTML = `
-        <div class="setup-wrapper">
-            <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:16px;">Organization setup (Admin only)</h3>
+        <div class="setup-wrapper page-shell">
+            <div class="page-hero compact">
+                <div>
+                    <p class="page-eyebrow">Admin only</p>
+                    <h2 class="page-title">Organization Setup</h2>
+                    <p class="page-subtitle">Manage departments, asset categories, and employee records.</p>
+                </div>
+            </div>
             
-            <div class="sub-nav-pill-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div style="display:flex; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div class="sub-nav-pill-group">
                     <button class="sub-nav-pill ${activeTab === 'departments' ? 'active' : ''}" data-tab="departments">Departments</button>
                     <button class="sub-nav-pill ${activeTab === 'categories' ? 'active' : ''}" data-tab="categories">Categories</button>
                     <button class="sub-nav-pill ${activeTab === 'employees' ? 'active' : ''}" data-tab="employees">Employees</button>
                 </div>
-                <button class="btn btn-primary" id="setup-add-btn" style="border:2px solid var(--color-gray-900); background-color:#e2f2e9; color:#065f46; border-color:#a7f3d0; font-weight:700;">
-                    + Add
+                <button class="btn btn-success" id="setup-add-btn">
+                    <i data-lucide="plus"></i> Add
                 </button>
             </div>
 
@@ -56,8 +62,10 @@ export async function renderSetup(container, user) {
             </div>
 
             <div style="margin-top:30px; font-size:0.85rem; color:var(--color-gray-500); font-style:italic; border-top:1px solid var(--color-gray-200); padding-top:14px;">
-                Editing a department here also drives the picklist in Screen 4 & 5
+                Editing a department here also drives the picklist in Allocation &amp; Booking screens.
             </div>
+        </div>
+    `;
         </div>
     `;
 
@@ -88,7 +96,7 @@ function renderTabContent(user) {
     } else {
         renderEmployeesList(viewport, user);
     }
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 function triggerAddAction(user) {

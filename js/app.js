@@ -106,7 +106,7 @@ export function routeTo(screenName) {
         try {
             await renderFn(viewport, user); 
             viewport.style.opacity = 1;
-            lucide.createIcons();
+            safeCreateIcons();
         } catch (error) {
             console.error("Screen failed to render:", error);
             viewport.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--color-danger);">Failed to load module. Check console.</div>`;
@@ -126,6 +126,11 @@ async function updateUIForUser(user) {
     document.getElementById("header-user-name").textContent = user.name;
     document.getElementById("dropdown-full-name").textContent = user.name;
     document.getElementById("dropdown-email").textContent = user.email;
+    
+    // Update header avatar initials
+    const initials2 = user.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+    const headerAvatar = document.getElementById("header-user-avatar");
+    if (headerAvatar) headerAvatar.textContent = initials2;
     
     // FETCH DEPARTMENTS FROM BACKEND
     const depts = await Store.fetchDepartments();
@@ -264,7 +269,7 @@ async function renderNotificationsDropdown() {
         </div>
     `).join("");
     
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 // 5. Drawer & Modal System Exports
@@ -273,7 +278,7 @@ export function openDrawer(title, htmlContent) {
     document.getElementById("drawer-body").innerHTML = htmlContent;
     document.getElementById("drawer-overlay").classList.remove("hidden");
     document.getElementById("drawer-panel").classList.remove("hidden");
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 export function closeDrawer() {
@@ -305,7 +310,7 @@ export function openModal(title, htmlContent, onConfirm, confirmText = "Confirm"
         }
     });
     
-    lucide.createIcons();
+    safeCreateIcons();
 }
 
 export function closeModal() {
@@ -331,7 +336,7 @@ export function showToast(message, type = "success") {
     `;
     
     container.appendChild(toast);
-    lucide.createIcons();
+    safeCreateIcons();
 
     setTimeout(() => {
         toast.style.animation = "toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards";
@@ -340,3 +345,54 @@ export function showToast(message, type = "success") {
 }
 
 
+<<<<<<< HEAD
+    if (!toggleBtn || !panel) {
+        return;
+    }
+
+    toggleBtn.addEventListener("click", () => {
+        panel.classList.toggle("collapsed");
+        const isCollapsed = panel.classList.contains("collapsed");
+        toggleBtn.innerHTML = `<i data-lucide="${isCollapsed ? 'chevron-up' : 'chevron-down'}"></i>`;
+        safeCreateIcons();
+    });
+
+    const switcherBtns = document.querySelectorAll(".btn-switcher");
+    switcherBtns.forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const role = btn.dataset.role;
+            
+            // FETCH EMPLOYEES FROM BACKEND
+            const employees = await Store.fetchEmployees();
+            
+            const targetUser = employees.find(e => e.role === role);
+            if (!targetUser) {
+                showToast(`No mock user found for role: ${role}`, "warning");
+                return;
+            }
+
+            Store.setCurrentUser(targetUser);
+            
+            switcherBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            document.getElementById("switcher-active-role").textContent = role;
+
+            showToast(`Switched active workspace view to: ${targetUser.name} (${role})`, "info");
+            checkAuthAndRoute();
+        });
+    });
+
+    const activeUser = Store.getCurrentUser();
+    if (activeUser) {
+        switcherBtns.forEach(btn => {
+            if (btn.dataset.role === activeUser.role) {
+                btn.classList.add("active");
+                document.getElementById("switcher-active-role").textContent = activeUser.role;
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+    }
+}
+=======
+>>>>>>> origin/main
